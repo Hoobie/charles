@@ -19,6 +19,7 @@ public class Configuration {
 	public Integer maxMetaIterationTime;
 	public Integer priority;
 	public Integer concurrentExecutions;
+	public File source;
 
 	public PhaseConfiguration generatePhase;
 	public PhaseConfiguration improvePhase;
@@ -67,7 +68,10 @@ public class Configuration {
 
 	public static Configuration fromFile(File file) throws JsonParseException,
 			JsonMappingException, IOException {
-		return objectMapper.readValue(file, Configuration.class);
+		Configuration configuration = objectMapper.readValue(file,
+				Configuration.class);
+		configuration.source = file;
+		return configuration;
 	}
 
 	public boolean isValid() {

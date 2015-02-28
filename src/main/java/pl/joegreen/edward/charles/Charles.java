@@ -57,14 +57,11 @@ public class Charles {
 
 	public Charles(Configuration configuration) {
 		this.configuration = configuration;
-		String generateCode = CodeReader.readCode(
-				configuration.getPhaseConfiguration(PhaseType.GENERATE),
+		String generateCode = CodeReader.readCode(configuration,
 				PhaseType.GENERATE);
-		String improveCode = CodeReader.readCode(
-				configuration.getPhaseConfiguration(PhaseType.IMPROVE),
+		String improveCode = CodeReader.readCode(configuration,
 				PhaseType.IMPROVE);
-		String migrateCode = CodeReader.readCode(
-				configuration.getPhaseConfiguration(PhaseType.MIGRATE),
+		String migrateCode = CodeReader.readCode(configuration,
 				PhaseType.MIGRATE);
 		phaseCodes = ImmutableMap.of(PhaseType.GENERATE, generateCode,
 				PhaseType.IMPROVE, improveCode, PhaseType.MIGRATE, migrateCode);
@@ -185,18 +182,25 @@ public class Charles {
 
 	private void initializePhaseCodeInEngine(PhaseType phaseType,
 			ScriptEngine engine) throws ScriptException {
-		CompiledScript compiled = ((Compilable) engine).compile(phaseCodes
-				.get(phaseType));
-		engine.put(phaseType.toFunctionName(), compiled.eval());
+		String phaseCode = phaseCodes.get(phaseType);
+		String phaseFunctionName = phaseType.toFunctionName();
+		CompiledScript compiled = ((Compilable) engine).compile(phaseCode);
+		logger.debug("Creating function {} with code: {}", phaseFunctionName,
+				phaseCode);
+		engine.put(phaseFunctionName, compiled.eval());
 	}
 
 	private Map<Object, Object> runFunctionLocally(PhaseType phaseType,
 			Map<Object, Object> input) throws ScriptException,
 			JsonParseException, JsonMappingException, IOException {
-		engine.put("input", new ObjectMapper().writeValueAsString(input));
+		String inputAsString = new ObjectMapper().writeValueAsString(input);
+		logger.debug("Setting 'input' variable in script engine to: {}", input);
+		engine.put("input", inputAsString);
 		engine.eval("input = JSON.parse(input)");
-		String result = (String) engine.eval("JSON.stringify("
-				+ phaseType.toFunctionName() + "(input))");
+		String functionCall = phaseType.toFunctionName() + "(input)";
+		logger.debug("Calling function {}", functionCall);
+		String result = (String) engine.eval("JSON.stringify(" + functionCall
+				+ ")");
 		return new ObjectMapper().readValue(result, Map.class);
 	}
 
@@ -399,16 +403,14 @@ public class Charles {
 
 	public static void main(String[] args) throws IOException, RestException,
 			ScriptException {
-		// Configuration configuration = Configuration
-		// .fromFile("C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/config");
 		Configuration configuration = Configuration
-				.fromFile("C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs-emas/config");
+				.fromFile("C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/scripts/labs-emas/config");
 		if (!configuration.isValid()) {
 			throw new RuntimeException("Configuration is invalid: "
 					+ configuration.toString());
 		}
 		ArrayList<Long> times = new ArrayList<Long>();
-		for (int i = 0; i < 3; ++i) {
+		for (int i = 0; i < 1; ++i) {
 			long startTime = System.currentTimeMillis();
 			IntStream
 					.range(0, 1)
