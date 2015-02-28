@@ -1,0 +1,34 @@
+<html>
+
+<head>
+    <script src="generate.js"></script>
+    <script src="migrate.js"></script>
+    <script src="improveEMAS.js"></script>
+    <script>
+
+        var log = function(populations){
+            console.log(JSON.stringify(populations, undefined, 2))
+        }
+
+        var populations = [];
+
+        for (var i = 0; i < 5; ++i) {
+            populations.push(generate({number: 50, dimension: 6, range:5.12}));
+        }
+
+        for (var i = 0; i < 6; ++i) {
+            populations = populations.map(function (population) {
+                return improve(population, {iterations: 10000});
+            })
+            populations = migrate(populations);
+        }
+        log(populations)
+
+    </script>
+</head>
+
+<body>
+</body>
+
+
+</html>

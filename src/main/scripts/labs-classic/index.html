@@ -1,0 +1,37 @@
+<html>
+
+<head>
+<script src="generate.js"></script>
+<script src="common.js"></script>
+<script src="select.js"></script>
+<script src="migrate.js"></script>
+<script src="mutate.js"></script>
+<script src="localsearch.js"></script>
+<script src="improveClassic.js"></script>
+<script src="crossover.js"></script>
+<script src="migrate.js"></script>
+    <script>
+        var log = function(obj) { console.log(JSON.stringify(obj, undefined, 2))};
+
+        var populations = [];
+
+        for(var i = 0; i<5 ;++i){
+            populations.push(generate({individualsCount:30, bytesCount:40}));
+        }
+
+        for(var i = 0; i<10; ++i){
+            populations = populations.map(function(population){
+                return improve(population, {iterations:100});
+            })
+            populations = migrate(populations);
+        }
+        log(populations)
+
+    </script>
+</head>
+
+<body>
+</body>
+
+
+</html>
