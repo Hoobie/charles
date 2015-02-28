@@ -140,17 +140,17 @@ public class Charles {
 	private Population migratePopulationAsynchronously(Population population,
 			Population pool) {
 		logger.info("Migrating population locally");
-		Map<Object, Object> argument = addOptionsToArgument(population,
-				"population", PhaseType.MIGRATE);
-		argument.put("pool", pool);
+		Map<Object, Object> argument = addOptionsToArgument(
+				population.getMapRepresentation(), "population",
+				PhaseType.MIGRATE);
+		argument.put("pool", pool.getMapRepresentation());
 		try {
 			Map<Object, Object> migrationResult = runFunctionLocally(
 					PhaseType.MIGRATE, argument);
 			pool.put("individuals", ((Map<Object, Object>) migrationResult
 					.get("migrationPool")).get("individuals"));
 			Population populationAfterMigration = new Population(
-					(Map<? extends Object, ? extends Object>) migrationResult
-							.get("population"));
+					(Map<Object, Object>) migrationResult.get("population"));
 			return populationAfterMigration;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -261,7 +261,8 @@ public class Charles {
 				.stream()
 				.map(population -> {
 					Map<Object, Object> argument = addOptionsToArgument(
-							population, "population", PhaseType.IMPROVE);
+							population.getMapRepresentation(), "population",
+							PhaseType.IMPROVE);
 					try {
 						logger.info("Improving next population");
 						Population improvedPopulation = new Population(
@@ -289,7 +290,8 @@ public class Charles {
 		ArrayList<Map<Object, Object>> arguments = populations
 				.stream()
 				.map(population -> {
-					return addOptionsToArgument(population, "population",
+					return addOptionsToArgument(
+							population.getMapRepresentation(), "population",
 							PhaseType.IMPROVE);
 				}).collect(Collectors.toCollection(ArrayList::new));
 		return edwardApiWrapper.addTasks(phaseJobIds.get(PhaseType.IMPROVE),
@@ -386,8 +388,9 @@ public class Charles {
 				configuration.priority, configuration.concurrentExecutions);
 		String migrationResult = edwardApiWrapper
 				.blockUntilResult(taskIdentifiers.get(0));
-		return ((List<Population>) objectMapper.readValue(migrationResult,
-				Map.class).get("populations")).stream().map(Population::new)
+		return ((List<Map<Object, Object>>) objectMapper.readValue(
+				migrationResult, Map.class).get("populations")).stream()
+				.map(Population::new)
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
@@ -426,8 +429,9 @@ public class Charles {
 											.size(); ++populationNumber) {
 										logger.info("--- Population "
 												+ populationNumber + " ---");
-										printAsPrettyJson(populations
-												.get(populationNumber));
+										printAsPrettyJson(populations.get(
+												populationNumber)
+												.getMapRepresentation());
 									}
 								} catch (Exception e) {
 									throw new RuntimeException(e);

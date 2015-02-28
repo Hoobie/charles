@@ -1,12 +1,25 @@
 package pl.joegreen.edward.charles.configuration.model;
 
-import java.util.HashMap;
 import java.util.Map;
 
-public class Population extends HashMap<Object, Object> {
+public class Population {
 
-	public Population(Map<? extends Object, ? extends Object> m) {
-		super(m);
+	private Map<Object, Object> mapRepresentation;
+
+	public Map<Object, Object> getMapRepresentation() {
+		return mapRepresentation;
+	}
+
+	public Population(Map<Object, Object> map) {
+		this.mapRepresentation = map;
+	}
+
+	public void put(Object key, Object value) {
+		mapRepresentation.put(key, value);
+	}
+
+	public Object get(Object key) {
+		return mapRepresentation.get(key);
 	}
 
 }
