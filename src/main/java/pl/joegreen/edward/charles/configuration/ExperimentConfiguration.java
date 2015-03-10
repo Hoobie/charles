@@ -1,4 +1,4 @@
-package pl.joegreen.edward.charles.configuration.model;
+package pl.joegreen.edward.charles.configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,10 +10,12 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class Configuration {
-	public final static ObjectMapper objectMapper = new ObjectMapper()
-			.configure(Feature.ALLOW_COMMENTS, true).configure(
-					Feature.ALLOW_SINGLE_QUOTES, true);
+public class ExperimentConfiguration {
+	protected final static ObjectMapper JSON_MAPPER = new ObjectMapper()
+			.configure(Feature.ALLOW_COMMENTS, true)
+			.configure(Feature.ALLOW_SINGLE_QUOTES, true)
+			.configure(Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+
 	public Integer metaIterationsCount;
 	public Integer populationsCount;
 	public Integer maxMetaIterationTime;
@@ -21,15 +23,15 @@ public class Configuration {
 	public Integer concurrentExecutions;
 	public File source;
 
-	public PhaseConfiguration generatePhase;
-	public PhaseConfiguration improvePhase;
-	public PhaseConfiguration migratePhase;
+	public PhaseParameters generatePhase;
+	public PhaseParameters improvePhase;
+	public PhaseParameters migratePhase;
 
-	private Configuration() {
+	private ExperimentConfiguration() {
 
 	}
 
-	public PhaseConfiguration getPhaseConfiguration(PhaseType type) {
+	public PhaseParameters getPhaseConfiguration(PhaseType type) {
 		switch (type) {
 		case GENERATE:
 			return generatePhase;
@@ -61,15 +63,15 @@ public class Configuration {
 		return false;
 	}
 
-	public static Configuration fromFile(String path)
+	public static ExperimentConfiguration fromFile(String path)
 			throws JsonParseException, JsonMappingException, IOException {
 		return fromFile(new File(path));
 	}
 
-	public static Configuration fromFile(File file) throws JsonParseException,
-			JsonMappingException, IOException {
-		Configuration configuration = objectMapper.readValue(file,
-				Configuration.class);
+	public static ExperimentConfiguration fromFile(File file)
+			throws JsonParseException, JsonMappingException, IOException {
+		ExperimentConfiguration configuration = JSON_MAPPER.readValue(file,
+				ExperimentConfiguration.class);
 		configuration.source = file;
 		return configuration;
 	}

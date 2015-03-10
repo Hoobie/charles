@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import pl.joegreen.edward.charles.communication.EdwardApiWrapper;
 import pl.joegreen.edward.charles.configuration.CodeReader;
-import pl.joegreen.edward.charles.configuration.model.Configuration;
-import pl.joegreen.edward.charles.configuration.model.Population;
+import pl.joegreen.edward.charles.configuration.EdwardApiConfiguration;
+import pl.joegreen.edward.charles.configuration.ExperimentConfiguration;
 import pl.joegreen.edward.rest.client.RestException;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -42,9 +42,9 @@ public class Charles {
 	private final static org.slf4j.Logger logger = LoggerFactory
 			.getLogger(Charles.class);
 	private static final boolean ASYNC_MIGRATION = true;
-	private final Configuration configuration;
+	private final ExperimentConfiguration configuration;
 
-	private EdwardApiWrapper edwardApiWrapper = new EdwardApiWrapper();
+	private EdwardApiWrapper edwardApiWrapper;
 
 	private Map<PhaseType, String> phaseCodes;
 
@@ -55,7 +55,9 @@ public class Charles {
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	public Charles(Configuration configuration) {
+	public Charles(EdwardApiConfiguration apiConfiguration,
+			ExperimentConfiguration configuration) {
+		this.edwardApiWrapper = new EdwardApiWrapper(apiConfiguration);
 		this.configuration = configuration;
 		String generateCode = CodeReader.readCode(configuration,
 				PhaseType.GENERATE);
@@ -365,7 +367,10 @@ public class Charles {
 			Collection<Population> populations) throws JsonParseException,
 			JsonMappingException, ScriptException, IOException {
 		logger.info("Migrating populations locally");
-		Map<Object, Object> argument = addOptionsToArgument(populations,
+		Collection<Map<Object, Object>> representations = populations.stream()
+				.map(Population::getMapRepresentation)
+				.collect(Collectors.toList());
+		Map<Object, Object> argument = addOptionsToArgument(representations,
 				"populations", PhaseType.MIGRATE);
 		Map<Object, Object> result = runFunctionLocally(PhaseType.MIGRATE,
 				argument);
@@ -380,8 +385,12 @@ public class Charles {
 			IOException, RestException, ScriptException {
 		logger.info("Migrating between populations using Edward");
 
-		Map<Object, Object> migrateArgument = addOptionsToArgument(populations,
-				"populations", PhaseType.MIGRATE);
+		Collection<Map<Object, Object>> representations = populations.stream()
+				.map(Population::getMapRepresentation)
+				.collect(Collectors.toList());
+
+		Map<Object, Object> migrateArgument = addOptionsToArgument(
+				representations, "populations", PhaseType.MIGRATE);
 		List<Long> taskIdentifiers = edwardApiWrapper.addTasks(
 				phaseJobIds.get(PhaseType.MIGRATE),
 				Collections.singletonList(migrateArgument),
@@ -406,21 +415,50 @@ public class Charles {
 
 	public static void main(String[] args) throws IOException, RestException,
 			ScriptException {
-		Configuration configuration = Configuration
-				.fromFile("C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/scripts/labs-emas/config");
-		if (!configuration.isValid()) {
-			throw new RuntimeException("Configuration is invalid: "
-					+ configuration.toString());
+		String experimentConfigurationFilePath = null;
+		String apiConfigurationFilePath = null;
+		int numberOfExperimentRounds = 1;
+		int numberOfParallelExperimentsInRound = 1;
+		if (args.length < 2 || args.length > 4) {
+			System.err
+					.println("arguments: apiConfigurationFilePath experimentConfigurationFilePath [numberOfExperimentRounds] [parallelExperimentsInRound]");
+			System.exit(-1);
+		} else {
+			apiConfigurationFilePath = args[0];
+			experimentConfigurationFilePath = args[1];
+			if (args.length > 2) {
+				numberOfExperimentRounds = Integer.valueOf(args[1]);
+			}
+			if (args.length > 3) {
+				numberOfParallelExperimentsInRound = Integer.valueOf(args[2]);
+			}
 		}
+
+		if (numberOfExperimentRounds < 0
+				|| numberOfParallelExperimentsInRound < 0) {
+			System.err.println("Both integer parameters have to be >0.");
+		}
+
+		ExperimentConfiguration experimentConfiguration = ExperimentConfiguration
+				.fromFile(experimentConfigurationFilePath);
+
+		if (!experimentConfiguration.isValid()) {
+			throw new RuntimeException("Configuration is invalid: "
+					+ experimentConfiguration.toString());
+		}
+
+		EdwardApiConfiguration apiConfiguration = EdwardApiConfiguration
+				.fromFile(apiConfigurationFilePath);
 		ArrayList<Long> times = new ArrayList<Long>();
-		for (int i = 0; i < 1; ++i) {
+		for (int i = 0; i < numberOfExperimentRounds; ++i) {
 			long startTime = System.currentTimeMillis();
 			IntStream
-					.range(0, 1)
+					.range(0, numberOfParallelExperimentsInRound)
 					.parallel()
 					.forEach(
 							number -> {
-								Charles charles = new Charles(configuration);
+								Charles charles = new Charles(apiConfiguration,
+										experimentConfiguration);
 								try {
 									List<Population> populations = charles
 											.calculate();

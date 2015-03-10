@@ -7,24 +7,24 @@
 	"maxMetaIterationTime": 100000,
 	"generatePhase": {
 		"useVolunteerComputing": false,
-		"codeFiles": ["C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/generate.js"],
-		"parameters": {"individualsCount":50, "bytesCount":81}
+		"codeFiles": ["generate.js"],
+		"parameters": {"individualsCount":50, "bytesCount":7}
 	},
 	"improvePhase": {
 		"useVolunteerComputing": true,
-		"codeFiles": ["C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/common.js",
-		"C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/select.js",
-		"C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/crossover.js",
-		"C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/mutate.js",
-		"C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/localsearch.js",
-		"C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/improveClassic.js"],
+		"codeFiles": ["common.js",
+		"select.js",
+		"crossover.js",
+		"mutate.js",
+		"localsearch.js",
+		"improveClassic.js"],
 		"parameters": {
 			"iterations":100
 		} 	
 	},
 	"migratePhase": {
 		"useVolunteerComputing": false,
-		"codeFiles": ["C:/Users/joegreen/Desktop/Uczelnia/praca-magisterska/charles/labs/migrate.js"],
+		"codeFiles": ["migrate.js"],
 		"parameters": {
 		}
 	}

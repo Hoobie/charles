@@ -1,9 +1,9 @@
-package pl.joegreen.edward.charles.configuration.model;
+package pl.joegreen.edward.charles.configuration;
 
 import java.util.List;
 import java.util.Map;
 
-public class PhaseConfiguration {
+public class PhaseParameters {
 	public List<String> codeFiles;
 	public boolean useVolunteerComputing;
 	public Map<Object, Object> parameters;

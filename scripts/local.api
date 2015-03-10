@@ -1,0 +1,7 @@
+{
+	hostname: "localhost",
+	prefix : "api/internal/",
+	port : 8080,
+	user: "admin",
+	password: "admin"
+}

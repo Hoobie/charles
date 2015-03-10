@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import pl.joegreen.edward.charles.configuration.EdwardApiConfiguration;
 import pl.joegreen.edward.core.model.JsonData;
 import pl.joegreen.edward.core.model.TaskStatus;
 import pl.joegreen.edward.rest.client.RestClient;
@@ -20,8 +21,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class EdwardApiWrapper {
 
 	private final static int RESULT_CHECK_INTERVAL_MS = 100;
-	private RestClient restClient = new RestClient("admin", "admin",
-			"localhost", 8080);
+	private RestClient restClient;
+
+	public EdwardApiWrapper(EdwardApiConfiguration apiProperties) {
+		restClient = new RestClient(apiProperties.getUser(),
+				apiProperties.getPassword(), apiProperties.getHostname(),
+				apiProperties.getPort(), "http", apiProperties.getPrefix());
+	}
 
 	private final static Logger logger = LoggerFactory
 			.getLogger(EdwardApiWrapper.class);

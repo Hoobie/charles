@@ -7,14 +7,12 @@ import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 
 import pl.joegreen.edward.charles.PhaseType;
-import pl.joegreen.edward.charles.configuration.model.Configuration;
-import pl.joegreen.edward.charles.configuration.model.PhaseConfiguration;
 
 public class CodeReader {
 
-	public static String readCode(Configuration configuration,
+	public static String readCode(ExperimentConfiguration configuration,
 			PhaseType phaseType) {
-		PhaseConfiguration phaseConfiguration = configuration
+		PhaseParameters phaseConfiguration = configuration
 				.getPhaseConfiguration(phaseType);
 		List<String> codeFiles = phaseConfiguration.codeFiles;
 		StringBuilder builder = new StringBuilder();
