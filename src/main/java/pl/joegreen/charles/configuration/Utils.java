@@ -1,4 +1,4 @@
-package pl.joegreen.edward.charles.configuration;
+package pl.joegreen.charles.configuration;
 
 public class Utils {
 	public static boolean anyNull(Object... objects) {

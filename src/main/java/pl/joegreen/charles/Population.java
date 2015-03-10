@@ -1,4 +1,4 @@
-package pl.joegreen.edward.charles;
+package pl.joegreen.charles;
 
 import java.util.Map;
 

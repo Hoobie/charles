@@ -1,4 +1,4 @@
-package pl.joegreen.edward.charles;
+package pl.joegreen.charles;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,10 +22,10 @@ import javax.script.ScriptException;
 
 import org.slf4j.LoggerFactory;
 
-import pl.joegreen.edward.charles.communication.EdwardApiWrapper;
-import pl.joegreen.edward.charles.configuration.CodeReader;
-import pl.joegreen.edward.charles.configuration.EdwardApiConfiguration;
-import pl.joegreen.edward.charles.configuration.ExperimentConfiguration;
+import pl.joegreen.charles.communication.EdwardApiWrapper;
+import pl.joegreen.charles.configuration.CodeReader;
+import pl.joegreen.charles.configuration.EdwardApiConfiguration;
+import pl.joegreen.charles.configuration.ExperimentConfiguration;
 import pl.joegreen.edward.rest.client.RestException;
 
 import com.fasterxml.jackson.core.JsonParseException;

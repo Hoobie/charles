@@ -1,4 +1,4 @@
-package pl.joegreen.edward.charles.communication;
+package pl.joegreen.charles.communication;
 
 import java.util.Collections;
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import pl.joegreen.edward.charles.configuration.EdwardApiConfiguration;
+import pl.joegreen.charles.configuration.EdwardApiConfiguration;
 import pl.joegreen.edward.core.model.JsonData;
 import pl.joegreen.edward.core.model.TaskStatus;
 import pl.joegreen.edward.rest.client.RestClient;

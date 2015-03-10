@@ -1,9 +1,9 @@
-package pl.joegreen.edward.charles.configuration;
+package pl.joegreen.charles.configuration;
 
 import java.io.File;
 import java.io.IOException;
 
-import pl.joegreen.edward.charles.PhaseType;
+import pl.joegreen.charles.PhaseType;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser.Feature;

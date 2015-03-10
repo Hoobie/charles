@@ -1,4 +1,4 @@
-package pl.joegreen.edward.charles.configuration;
+package pl.joegreen.charles.configuration;
 
 import java.util.List;
 import java.util.Map;

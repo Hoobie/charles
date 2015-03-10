@@ -1,4 +1,4 @@
-package pl.joegreen.edward.charles.configuration;
+package pl.joegreen.charles.configuration;
 
 import java.io.File;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 
-import pl.joegreen.edward.charles.PhaseType;
+import pl.joegreen.charles.PhaseType;
 
 public class CodeReader {
 

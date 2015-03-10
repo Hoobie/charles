@@ -1,4 +1,4 @@
-package pl.joegreen.edward.charles;
+package pl.joegreen.charles;
 
 public enum PhaseType {
 	GENERATE, IMPROVE, MIGRATE;
