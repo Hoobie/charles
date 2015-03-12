@@ -1,10 +1,11 @@
 package pl.joegreen.charles;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,18 +15,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.script.Compilable;
-import javax.script.CompiledScript;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import pl.joegreen.charles.communication.EdwardApiWrapper;
 import pl.joegreen.charles.configuration.CodeReader;
 import pl.joegreen.charles.configuration.EdwardApiConfiguration;
 import pl.joegreen.charles.configuration.ExperimentConfiguration;
+import pl.joegreen.charles.configuration.validation.ValidationResult;
+import pl.joegreen.charles.executor.LocalExecutor;
+import pl.joegreen.charles.executor.exception.CannotExecuteFunctionException;
+import pl.joegreen.charles.executor.exception.CannotInitializeExecutorException;
 import pl.joegreen.edward.rest.client.RestException;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -39,19 +41,18 @@ import com.google.common.collect.ImmutableMap;
 public class Charles {
 
 	private static final String META_ITERATION_NUMBER_PROPERTY = "metaIteration";
-	private final static org.slf4j.Logger logger = LoggerFactory
-			.getLogger(Charles.class);
-	private static final boolean ASYNC_MIGRATION = true;
+	private static final String PROJECT_NAME = "Charles";
+	private final static Logger logger = LoggerFactory.getLogger(Charles.class);
 	private final ExperimentConfiguration configuration;
 
 	private EdwardApiWrapper edwardApiWrapper;
 
 	private Map<PhaseType, String> phaseCodes;
 
+	private LocalExecutor localExecutor = new LocalExecutor();
+
 	private Long projectId;
 	private Map<PhaseType, Long> phaseJobIds;
-
-	private ScriptEngine engine;
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -69,27 +70,20 @@ public class Charles {
 				PhaseType.IMPROVE, improveCode, PhaseType.MIGRATE, migrateCode);
 	}
 
-	public List<Population> calculate() throws RestException,
-			JsonProcessingException, IOException, ScriptException {
-		if (configuration.isAnyPhaseUsingLocalEngine()) {
-			initializeLocalJavaScriptEngine();
-		}
-		if (configuration.isAnyPhaseUsingVolunteerComputing()) {
-			initializeVolunteerComputingJobs();
-		}
+	public List<Population> calculate() throws CannotExecuteFunctionException,
+			JsonProcessingException, RestException, IOException,
+			CannotInitializeExecutorException {
+		initializeLocalJavaScriptEngine();
+		initializeVolunteerComputingJobs();
 
-		List<Population> populations = configuration.generatePhase.useVolunteerComputing ? generatePopulationsRemotely()
-				: generatePopulationsLocally();
-		if (!configuration.getPhaseConfiguration(PhaseType.MIGRATE)
-				.isAsynchronous()) {
-			for (int i = 0; i < configuration.metaIterationsCount; ++i) {
+		List<Population> populations = generatePopulationsLocally();
+		if (!configuration.isAsynchronous()) {
+			for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
 				logger.info("Performing meta iteration " + i);
 				if (i > 0) {
-					populations = configuration.migratePhase.useVolunteerComputing ? migratePopulationsRemotely(populations)
-							: migratePopulationsLocally(populations);
+					populations = migratePopulationsLocally(populations);
 				}
-				populations = configuration.improvePhase.useVolunteerComputing ? improvePopulationsRemotely(populations)
-						: improvePopulationsLocally(populations);
+				populations = improvePopulationsRemotely(populations);
 			}
 		} else {
 			populations.forEach(population -> population.put(
@@ -122,11 +116,12 @@ public class Charles {
 								population -> {
 									if (((Integer) population
 											.get(META_ITERATION_NUMBER_PROPERTY))
-											.equals(configuration.metaIterationsCount)) {
+											.equals(configuration
+													.getMetaIterationsCount())) {
 										finalResults.add(population);
 									} else {
 										List<Long> identifiers = sendPopulationsToVolunteers(Arrays
-												.asList(migratePopulationAsynchronously(
+												.asList(migratePopulationLocallyAsynchronously(
 														population,
 														migrationPool)));
 										remoteTasks.add(identifiers.get(0));
@@ -139,16 +134,25 @@ public class Charles {
 		return populations;
 	}
 
-	private Population migratePopulationAsynchronously(Population population,
-			Population pool) {
+	private void initializeLocalJavaScriptEngine()
+			throws CannotInitializeExecutorException {
+		for (PhaseType phaseType : PhaseType.getLocalPhases()) {
+			localExecutor.initializeFunctionCode(phaseType.toFunctionName(),
+					phaseCodes.get(phaseType));
+		}
+	}
+
+	private Population migratePopulationLocallyAsynchronously(
+			Population population, Population pool) {
 		logger.info("Migrating population locally");
 		Map<Object, Object> argument = addOptionsToArgument(
 				population.getMapRepresentation(), "population",
 				PhaseType.MIGRATE);
 		argument.put("pool", pool.getMapRepresentation());
 		try {
-			Map<Object, Object> migrationResult = runFunctionLocally(
-					PhaseType.MIGRATE, argument);
+			Map<Object, Object> migrationResult = localExecutor
+					.executeFunction(PhaseType.MIGRATE.toFunctionName(),
+							argument);
 			pool.put("individuals", ((Map<Object, Object>) migrationResult
 					.get("migrationPool")).get("individuals"));
 			Population populationAfterMigration = new Population(
@@ -160,120 +164,46 @@ public class Charles {
 
 	}
 
-	private void initializeLocalJavaScriptEngine() throws ScriptException {
-		ScriptEngineManager manager = new ScriptEngineManager();
-		engine = manager.getEngineByName("nashorn");
-		for (PhaseType phaseType : PhaseType.values()) {
-			if (!configuration.getPhaseConfiguration(phaseType).useVolunteerComputing) {
-				initializePhaseCodeInEngine(phaseType, engine);
-			}
-		}
-	}
-
 	private void initializeVolunteerComputingJobs() {
-		projectId = edwardApiWrapper.createProjectAndGetId("Charles Project");
-		phaseJobIds = new HashMap<PhaseType, Long>();
-		for (PhaseType phaseType : PhaseType.values()) {
-			if (configuration.getPhaseConfiguration(phaseType).useVolunteerComputing) {
-				Long jobId = edwardApiWrapper.createJobAndGetId(projectId,
-						phaseType.toFunctionName(), phaseCodes.get(phaseType));
-				phaseJobIds.put(phaseType, jobId);
-			}
+		projectId = edwardApiWrapper.findProjectWithName(PROJECT_NAME).orElse(
+				null);
+		if (projectId == null) {
+			projectId = edwardApiWrapper.createProjectAndGetId(PROJECT_NAME);
 		}
-	}
 
-	private void initializePhaseCodeInEngine(PhaseType phaseType,
-			ScriptEngine engine) throws ScriptException {
-		String phaseCode = phaseCodes.get(phaseType);
-		String phaseFunctionName = phaseType.toFunctionName();
-		CompiledScript compiled = ((Compilable) engine).compile(phaseCode);
-		logger.debug("Creating function {} with code: {}", phaseFunctionName,
-				phaseCode);
-		engine.put(phaseFunctionName, compiled.eval());
-	}
-
-	private Map<Object, Object> runFunctionLocally(PhaseType phaseType,
-			Map<Object, Object> input) throws ScriptException,
-			JsonParseException, JsonMappingException, IOException {
-		String inputAsString = new ObjectMapper().writeValueAsString(input);
-		logger.debug("Setting 'input' variable in script engine to: {}", input);
-		engine.put("input", inputAsString);
-		engine.eval("input = JSON.parse(input)");
-		String functionCall = phaseType.toFunctionName() + "(input)";
-		logger.debug("Calling function {}", functionCall);
-		String result = (String) engine.eval("JSON.stringify(" + functionCall
-				+ ")");
-		return new ObjectMapper().readValue(result, Map.class);
+		String jobNameSuffix = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss")
+				.format(new Date());
+		phaseJobIds = new HashMap<PhaseType, Long>();
+		for (PhaseType phaseType : PhaseType.getRemotePhases()) {
+			Long jobId = edwardApiWrapper.createJobAndGetId(projectId,
+					phaseType.toFunctionName() + jobNameSuffix,
+					phaseCodes.get(phaseType));
+			phaseJobIds.put(phaseType, jobId);
+		}
 	}
 
 	private Map<Object, Object> addOptionsToArgument(Object argument,
 			String argumentName, PhaseType phaseType) {
 		Map<Object, Object> map = new HashMap<Object, Object>();
 		map.put(argumentName, argument);
-		map.put("parameters",
-				configuration.getPhaseConfiguration(phaseType).parameters);
+		map.put("parameters", configuration.getPhaseConfiguration(phaseType)
+				.getParameters());
 		return map;
 	}
 
 	private List<Population> generatePopulationsLocally()
-			throws ScriptException, JsonParseException, JsonMappingException,
-			IOException {
+			throws CannotExecuteFunctionException {
 		logger.info("Generating populations locally");
 		ImmutableList.Builder<Population> listBuilder = new Builder<Population>();
-		for (int i = 0; i < configuration.populationsCount; ++i) {
+		for (int i = 0; i < configuration.getPopulationsCount(); ++i) {
 			Map<Object, Object> phaseParameters = configuration
-					.getPhaseConfiguration(PhaseType.GENERATE).parameters;
-			Population generatedPopulation = new Population(runFunctionLocally(
-					PhaseType.GENERATE, phaseParameters));
+					.getPhaseConfiguration(PhaseType.GENERATE).getParameters();
+			Population generatedPopulation = new Population(
+					localExecutor.executeFunction(
+							PhaseType.GENERATE.toFunctionName(),
+							phaseParameters));
 			listBuilder.add(generatedPopulation);
 		}
-		return listBuilder.build();
-	}
-
-	private List<Population> generatePopulationsRemotely()
-			throws RestException, JsonProcessingException, IOException,
-			ScriptException {
-
-		logger.info("Generating initial populations using Edward");
-
-		ArrayList<Map<Object, Object>> inputs = new ArrayList<Map<Object, Object>>();
-		for (int i = 0; i < configuration.populationsCount; ++i) {
-			inputs.add(configuration.getPhaseConfiguration(PhaseType.GENERATE).parameters);
-		}
-		List<Long> taskIdentifiers = edwardApiWrapper.addTasks(
-				phaseJobIds.get(PhaseType.GENERATE), inputs,
-				configuration.priority, configuration.concurrentExecutions);
-		logger.info("Created populations generate tasks - waiting for results");
-
-		ImmutableList.Builder<Population> listBuilder = new Builder<Population>();
-		for (Long taskId : taskIdentifiers) {
-			logger.info("Initial population received from task " + taskId);
-			listBuilder.add(new Population(objectMapper.readValue(
-					edwardApiWrapper.blockUntilResult(taskId), Map.class)));
-		}
-
-		return listBuilder.build();
-	}
-
-	private List<Population> improvePopulationsLocally(
-			Collection<Population> populations) {
-		logger.info("Improving populations locally");
-		ImmutableList.Builder<Population> listBuilder = new Builder<Population>();
-		populations
-				.stream()
-				.map(population -> {
-					Map<Object, Object> argument = addOptionsToArgument(
-							population.getMapRepresentation(), "population",
-							PhaseType.IMPROVE);
-					try {
-						logger.info("Improving next population");
-						Population improvedPopulation = new Population(
-								runFunctionLocally(PhaseType.IMPROVE, argument));
-						return improvedPopulation;
-					} catch (Exception e) {
-						throw new RuntimeException(e);// TODO: handle
-					}
-				}).forEach(population -> listBuilder.add(population));
 		return listBuilder.build();
 	}
 
@@ -297,8 +227,8 @@ public class Charles {
 							PhaseType.IMPROVE);
 				}).collect(Collectors.toCollection(ArrayList::new));
 		return edwardApiWrapper.addTasks(phaseJobIds.get(PhaseType.IMPROVE),
-				arguments, configuration.priority,
-				configuration.concurrentExecutions);
+				arguments, configuration.getPriority(),
+				configuration.getConcurrentExecutions());
 	}
 
 	private List<Population> getImprovedPopulations(List<Long> taskIdentifiers,
@@ -308,7 +238,8 @@ public class Charles {
 		Map<Long, Population> results = new HashMap<Long, Population>();
 		long waitingStartTime = System.currentTimeMillis();
 		while (results.size() < taskIdentifiers.size()
-				&& (System.currentTimeMillis() - waitingStartTime) < configuration.maxMetaIterationTime) {
+				&& (System.currentTimeMillis() - waitingStartTime) < configuration
+						.getMaxMetaIterationTime()) {
 			retrieveImprovedPopulations(taskIdentifiers, results);
 		}
 		if (results.size() < taskIdentifiers.size()) {
@@ -364,42 +295,19 @@ public class Charles {
 	}
 
 	private List<Population> migratePopulationsLocally(
-			Collection<Population> populations) throws JsonParseException,
-			JsonMappingException, ScriptException, IOException {
+			Collection<Population> populations)
+			throws CannotExecuteFunctionException {
 		logger.info("Migrating populations locally");
 		Collection<Map<Object, Object>> representations = populations.stream()
 				.map(Population::getMapRepresentation)
 				.collect(Collectors.toList());
 		Map<Object, Object> argument = addOptionsToArgument(representations,
 				"populations", PhaseType.MIGRATE);
-		Map<Object, Object> result = runFunctionLocally(PhaseType.MIGRATE,
-				argument);
+		Map<Object, Object> result = localExecutor.executeFunction(
+				PhaseType.MIGRATE.toFunctionName(), argument);
 		List<Map<Object, Object>> newPopulations = (List<Map<Object, Object>>) result
 				.get("populations");
 		return newPopulations.stream().map(asMap -> new Population(asMap))
-				.collect(Collectors.toCollection(ArrayList::new));
-	}
-
-	private List<Population> migratePopulationsRemotely(
-			Collection<Population> populations) throws JsonProcessingException,
-			IOException, RestException, ScriptException {
-		logger.info("Migrating between populations using Edward");
-
-		Collection<Map<Object, Object>> representations = populations.stream()
-				.map(Population::getMapRepresentation)
-				.collect(Collectors.toList());
-
-		Map<Object, Object> migrateArgument = addOptionsToArgument(
-				representations, "populations", PhaseType.MIGRATE);
-		List<Long> taskIdentifiers = edwardApiWrapper.addTasks(
-				phaseJobIds.get(PhaseType.MIGRATE),
-				Collections.singletonList(migrateArgument),
-				configuration.priority, configuration.concurrentExecutions);
-		String migrationResult = edwardApiWrapper
-				.blockUntilResult(taskIdentifiers.get(0));
-		return ((List<Map<Object, Object>>) objectMapper.readValue(
-				migrationResult, Map.class).get("populations")).stream()
-				.map(Population::new)
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
@@ -417,43 +325,49 @@ public class Charles {
 			ScriptException {
 		String experimentConfigurationFilePath = null;
 		String apiConfigurationFilePath = null;
-		int numberOfExperimentRounds = 1;
-		int numberOfParallelExperimentsInRound = 1;
-		if (args.length < 2 || args.length > 4) {
+		if (args.length != 2) {
 			System.err
-					.println("arguments: apiConfigurationFilePath experimentConfigurationFilePath [numberOfExperimentRounds] [parallelExperimentsInRound]");
+					.println("arguments: apiConfigurationFilePath experimentConfigurationFilePath ");
 			System.exit(-1);
 		} else {
 			apiConfigurationFilePath = args[0];
 			experimentConfigurationFilePath = args[1];
-			if (args.length > 2) {
-				numberOfExperimentRounds = Integer.valueOf(args[1]);
-			}
-			if (args.length > 3) {
-				numberOfParallelExperimentsInRound = Integer.valueOf(args[2]);
-			}
-		}
-
-		if (numberOfExperimentRounds < 0
-				|| numberOfParallelExperimentsInRound < 0) {
-			System.err.println("Both integer parameters have to be >0.");
 		}
 
 		ExperimentConfiguration experimentConfiguration = ExperimentConfiguration
 				.fromFile(experimentConfigurationFilePath);
 
-		if (!experimentConfiguration.isValid()) {
-			throw new RuntimeException("Configuration is invalid: "
-					+ experimentConfiguration.toString());
+		ValidationResult experimentConfigurationValidationResult = experimentConfiguration
+				.isValid();
+
+		if (!experimentConfigurationValidationResult.isValid()) {
+			throw new RuntimeException(
+					experimentConfigurationValidationResult.toString()
+							+ " \n Received configuration: \n"
+							+ experimentConfiguration.toString());
 		}
 
 		EdwardApiConfiguration apiConfiguration = EdwardApiConfiguration
 				.fromFile(apiConfigurationFilePath);
+
+		ValidationResult apiConfigurationValidationResult = apiConfiguration
+				.isValid();
+
+		if (!apiConfigurationValidationResult.isValid()) {
+			throw new RuntimeException(
+					apiConfigurationValidationResult.toString()
+							+ " \n Received configuration: \n"
+							+ apiConfiguration.toString());
+		}
+
 		ArrayList<Long> times = new ArrayList<Long>();
-		for (int i = 0; i < numberOfExperimentRounds; ++i) {
+		for (int i = 0; i < experimentConfiguration
+				.getNumberOfExperimentRounds(); ++i) {
 			long startTime = System.currentTimeMillis();
 			IntStream
-					.range(0, numberOfParallelExperimentsInRound)
+					.range(0,
+							experimentConfiguration
+									.getNumberOfParallelExperimentsInRound())
 					.parallel()
 					.forEach(
 							number -> {

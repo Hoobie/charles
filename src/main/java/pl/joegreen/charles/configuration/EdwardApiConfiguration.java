@@ -2,8 +2,12 @@ package pl.joegreen.charles.configuration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+
+import pl.joegreen.charles.configuration.validation.ValidationResult;
+import pl.joegreen.charles.configuration.validation.ValidationUtils;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -11,6 +15,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 
 public class EdwardApiConfiguration {
 	protected final static ObjectMapper JSON_MAPPER = new ObjectMapper()
@@ -41,9 +46,17 @@ public class EdwardApiConfiguration {
 		return password;
 	}
 
-	public boolean isValid() {
-		return !(StringUtils.isBlank(hostname) || StringUtils.isBlank(password)
-				|| StringUtils.isBlank(user) || port == 0);
+	public ValidationResult isValid() {
+		ValidationResult result;
+		Map<String, String> descriptionsToObjects = ImmutableMap.of(
+				"Host name", hostname, "user", user, "password", password);
+		result = ValidationUtils.checkPredicate(descriptionsToObjects,
+				str -> !StringUtils.isBlank(str), desc -> desc
+						+ " cannot be empty");
+		if (port == 0) {
+			result.addError("Post number cannot be equal to 0");
+		}
+		return result;
 	}
 
 	public static EdwardApiConfiguration fromFile(String path)

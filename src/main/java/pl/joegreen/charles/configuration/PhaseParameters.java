@@ -3,26 +3,33 @@ package pl.joegreen.charles.configuration;
 import java.util.List;
 import java.util.Map;
 
+import pl.joegreen.charles.configuration.validation.ValidationResult;
+
+import com.google.common.collect.ImmutableMap;
+
 public class PhaseParameters {
-	public List<String> codeFiles;
-	public boolean useVolunteerComputing;
-	public Map<Object, Object> parameters;
+	private List<String> codeFiles;
+	private Map<Object, Object> parameters;
+
+	public ValidationResult isValid() {
+		ValidationResult result = new ValidationResult();
+		if (codeFiles == null || codeFiles.isEmpty()) {
+			result.addError("codeFiles cannot be null or empty in any phase");
+		}
+		return result;
+	}
 
 	@Override
 	public String toString() {
-		return "PhaseConfiguration [codePath=" + codeFiles
-				+ ", useVolunteerComputing=" + useVolunteerComputing
-				+ ", parameters=" + parameters + "]";
+		return "PhaseParameters [codeFiles=" + codeFiles + ", parameters="
+				+ parameters + "]";
 	}
 
-	/** Only migration phase can be asynchronous **/
-	public boolean isAsynchronous() {
-		Object asyncValue = parameters.get("asynchronous");
-		return Boolean.TRUE.equals(asyncValue);
+	public List<String> getCodeFiles() {
+		return codeFiles;
 	}
 
-	public boolean isValid() {
-		return Utils.noNulls(codeFiles, useVolunteerComputing, parameters)
-				&& !codeFiles.isEmpty();
+	public Map<Object, Object> getParameters() {
+		return parameters != null ? parameters : ImmutableMap.of();
 	}
 }

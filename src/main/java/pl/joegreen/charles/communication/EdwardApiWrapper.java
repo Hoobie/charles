@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import pl.joegreen.charles.configuration.EdwardApiConfiguration;
 import pl.joegreen.edward.core.model.JsonData;
+import pl.joegreen.edward.core.model.Project;
 import pl.joegreen.edward.core.model.TaskStatus;
 import pl.joegreen.edward.rest.client.RestClient;
 import pl.joegreen.edward.rest.client.RestException;
@@ -54,7 +55,7 @@ public class EdwardApiWrapper {
 		try {
 			return restClient.addProject(projectName, 1L).getId();
 		} catch (RestException e) {
-			throw new IllegalStateException(e);
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -63,7 +64,7 @@ public class EdwardApiWrapper {
 			return restClient.addJob(projectId, jobName,
 					"var compute = " + jobCode).getId();
 		} catch (RestException e) {
-			throw new IllegalStateException(e);
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -124,4 +125,15 @@ public class EdwardApiWrapper {
 				}).collect(Collectors.toList());
 	}
 
+	public Optional<Long> findProjectWithName(String projectName) {
+		try {
+			List<Project> projects = restClient.getProjects();
+			Optional<Project> projectWithName = projects.stream()
+					.filter(project -> project.getName().equals(projectName))
+					.findFirst();
+			return projectWithName.map(project -> project.getId());
+		} catch (RestException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
 }

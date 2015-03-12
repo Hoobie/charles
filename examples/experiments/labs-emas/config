@@ -1,27 +1,26 @@
 {
-	/*labs with classic*/
-	"metaIterationsCount":3,
-	"populationsCount": 3,
-	"priority":0,
-	"concurrentExecutions":1,
-	"maxMetaIterationTime": 100000,
-	"generatePhase": {
-		"useVolunteerComputing": false,
-		"codeFiles": ["config.js", "generate.js"],
-		"parameters": {"individualsCount":30, "bytesCount":10}
+	/*labs with emas*/
+	/*edward properties*/
+	priority:0, 
+	concurrentExecutions:1,
+	/* charles properties */
+	numberOfExperimentRounds: 1,
+	numberOfParallelExperimentsInRound: 1,
+	asynchronous: true,  /*change to false if migrate.js is used */
+	metaIterationsCount:3,
+	populationsCount: 3,
+	maxMetaIterationTime: 100000,
+	generatePhase: {
+		codeFiles: ["config.js", "generate.js"],
+		parameters: {individualsCount:30, bytesCount:10}
 	},
-	"improvePhase": {
-		"useVolunteerComputing": true,
-		"codeFiles": ["config.js", "common.js","fight.js","fitness.js","localsearch.js","crossover.js","improveEMAS.js"],
-		"parameters": {
-			"iterations":100
+	improvePhase: {
+		codeFiles: ["config.js", "common.js","fight.js","fitness.js","localsearch.js","crossover.js","improveEMAS.js"],
+		parameters: {
+			iterations:100
 		} 	
 	},
-	"migratePhase": {
-		"useVolunteerComputing": false,
-		"codeFiles": ["migrateAsync.js"],
-		"parameters": {
-			"asynchronous": true
-		}
+	migratePhase: {
+		codeFiles: ["migrateAsync.js"] /*["migrate.js"] to use sync migration */
 	}
 }

@@ -24,7 +24,7 @@
 		<dependency>
 			<groupId>pl.joegreen.edward</groupId>
 			<artifactId>edward-rest-client</artifactId>
-			<version>0.1</version>
+			<version>0.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>

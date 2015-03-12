@@ -1,31 +1,31 @@
 {
-	/*labs with classic*/
-	"metaIterationsCount":3,
-	"populationsCount": 3,
-	"priority":0,
-	"concurrentExecutions":1,
-	"maxMetaIterationTime": 100000,
-	"generatePhase": {
-		"useVolunteerComputing": false,
-		"codeFiles": ["generate.js"],
-		"parameters": {"individualsCount":50, "bytesCount":7}
+	/*labs with classic algorithm*/
+	/*edward properties*/
+	priority:0, 
+	concurrentExecutions:1,
+	/* charles properties */
+	numberOfExperimentRounds: 1,
+	numberOfParallelExperimentsInRound: 1,
+	asynchronous: false,
+	metaIterationsCount:3,
+	populationsCount: 3,
+	maxMetaIterationTime: 100000,
+	generatePhase: {
+		codeFiles: ["generate.js"],
+		parameters: {individualsCount:50, bytesCount:7}
 	},
-	"improvePhase": {
-		"useVolunteerComputing": true,
-		"codeFiles": ["common.js",
+	improvePhase: {
+		codeFiles: ["common.js",
 		"select.js",
 		"crossover.js",
 		"mutate.js",
 		"localsearch.js",
 		"improveClassic.js"],
-		"parameters": {
-			"iterations":100
+		parameters: {
+			iterations:100
 		} 	
 	},
-	"migratePhase": {
-		"useVolunteerComputing": false,
-		"codeFiles": ["migrate.js"],
-		"parameters": {
-		}
+	migratePhase: {
+		codeFiles: ["migrate.js"]
 	}
 }

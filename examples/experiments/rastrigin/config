@@ -1,28 +1,29 @@
 {
 	//Rastrigin with EMAS
-	"metaIterationsCount":5,
-	"populationsCount": 6,
-	"maxMetaIterationTime": 100000,
-	"priority":0,
-    "concurrentExecutions":1,
-	"generatePhase": {
-		"useVolunteerComputing": false,
-		"codeFiles": ["generate.js"],
-		"parameters": {"number":50, "dimension":6, "range":5.12}
+	/*edward properties*/
+	priority:0, 
+	concurrentExecutions:1,
+	/* charles properties */
+	numberOfExperimentRounds: 1,
+	numberOfParallelExperimentsInRound: 1,
+	asynchronous: true,
+	metaIterationsCount:5,
+	populationsCount: 6,
+	maxMetaIterationTime: 100000,
+	generatePhase: {
+		codeFiles: ["generate.js"],
+		parameters: {number:50, dimension:6, range:5.12}
 	},
-	"improvePhase": {
-		"useVolunteerComputing": true,
-		"codeFiles": ["improveEMAS.js"],
-		"parameters": {
-			"iterations":10000
+	improvePhase: {
+		codeFiles: ["improveEMAS.js"],
+		parameters: {
+			iterations:10000
 		}
 	},
-	"migratePhase": {
-		"useVolunteerComputing": false,
-		"codeFiles": ["migrateAsync.js"],
-		"parameters": {
-			"migrantsPerMetaIteration": 10,
-			"asynchronous": true
+	migratePhase: {
+		codeFiles: ["migrateAsync.js"],
+		parameters: {
+			migrantsPerMetaIteration: 10
 		}
 	}
 }
