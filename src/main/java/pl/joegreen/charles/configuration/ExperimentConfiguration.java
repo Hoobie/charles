@@ -32,6 +32,7 @@ public class ExperimentConfiguration {
 	private Integer concurrentExecutions = 1;
 	private File source;
 	private Boolean asynchronous;
+	private Boolean printPopulations = true;
 
 	private PhaseParameters generatePhase;
 	private PhaseParameters improvePhase;
@@ -52,6 +53,7 @@ public class ExperimentConfiguration {
 		builder.put("migratePhase", migratePhase);
 		builder.put("concurrentExecutions", concurrentExecutions);
 		builder.put("priority", priority);
+		builder.put("printPopulations", printPopulations);
 		return Collections.unmodifiableMap(builder);
 	}
 
@@ -173,6 +175,10 @@ public class ExperimentConfiguration {
 
 	public PhaseParameters getMigratePhase() {
 		return migratePhase;
+	}
+
+	public Boolean isPrintPopulations() {
+		return printPopulations;
 	}
 
 }

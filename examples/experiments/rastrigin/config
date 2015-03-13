@@ -4,7 +4,8 @@
 	priority:0, 
 	concurrentExecutions:1,
 	/* charles properties */
-	numberOfExperimentRounds: 1,
+	printPopulations: true,
+	numberOfExperimentRounds: 5,
 	numberOfParallelExperimentsInRound: 1,
 	asynchronous: true,
 	metaIterationsCount:5,
@@ -17,7 +18,7 @@
 	improvePhase: {
 		codeFiles: ["improveEMAS.js"],
 		parameters: {
-			iterations:10000
+			iterations:1000
 		}
 	},
 	migratePhase: {

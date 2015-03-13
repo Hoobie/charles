@@ -4,6 +4,7 @@
 	priority:0, 
 	concurrentExecutions:1,
 	/* charles properties */
+	printPopulations: true,
 	numberOfExperimentRounds: 1,
 	numberOfParallelExperimentsInRound: 1,
 	asynchronous: false,

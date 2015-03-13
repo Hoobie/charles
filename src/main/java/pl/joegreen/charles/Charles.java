@@ -17,6 +17,7 @@ import java.util.stream.IntStream;
 
 import javax.script.ScriptException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -364,6 +365,8 @@ public class Charles {
 		for (int i = 0; i < experimentConfiguration
 				.getNumberOfExperimentRounds(); ++i) {
 			long startTime = System.currentTimeMillis();
+			logger.info(String.format("Starting experiment round %d of %d", i,
+					experimentConfiguration.getNumberOfExperimentRounds()));
 			IntStream
 					.range(0,
 							experimentConfiguration
@@ -376,23 +379,30 @@ public class Charles {
 								try {
 									List<Population> populations = charles
 											.calculate();
-
-									for (int populationNumber = 0; populationNumber < populations
-											.size(); ++populationNumber) {
-										logger.info("--- Population "
-												+ populationNumber + " ---");
-										printAsPrettyJson(populations.get(
-												populationNumber)
-												.getMapRepresentation());
+									if (experimentConfiguration
+											.isPrintPopulations()) {
+										printPopulations(populations);
 									}
 								} catch (Exception e) {
 									throw new RuntimeException(e);
 								}
 							});
-			Long time = System.currentTimeMillis() - startTime;
-			times.add(time);
-			logger.info("Time: " + time + " ms");
+			long endTime = System.currentTimeMillis() - startTime;
+			times.add(endTime);
 		}
-		logger.info("All times: " + times);
+
+		String timesAsString = StringUtils.join(times, "\n");
+		logger.info("Times in each round [ms]: \n" + timesAsString);
+		long sum = times.stream().reduce(0L, (Long x, Long y) -> x + y);
+		logger.info("Total time [ms]: " + sum);
+		logger.info("Average time [ms]: " + sum / times.size());
+	}
+
+	private static void printPopulations(List<Population> populations) {
+		for (int populationNumber = 0; populationNumber < populations.size(); ++populationNumber) {
+			logger.info("--- Population " + populationNumber + " ---");
+			printAsPrettyJson(populations.get(populationNumber)
+					.getMapRepresentation());
+		}
 	}
 }
