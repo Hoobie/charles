@@ -1,0 +1,7 @@
+{
+	hostname: "bachor.joegreen.pl",
+	prefix : "edward",
+	port : 8282,
+	user: "admin",
+	password: "admin"
+}
