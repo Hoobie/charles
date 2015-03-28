@@ -3,6 +3,7 @@
 	/*edward properties*/
 	priority:0, 
 	concurrentExecutions:1,
+	timeout:120000,
 	/* charles properties */
 	printPopulations: true,
 	numberOfExperimentRounds: 5,

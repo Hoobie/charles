@@ -30,6 +30,7 @@ public class ExperimentConfiguration {
 	private Integer maxMetaIterationTime;
 	private Integer priority = 0;
 	private Integer concurrentExecutions = 1;
+	private Long timeout = 120000L;
 	private File source;
 	private Boolean asynchronous;
 	private Boolean printPopulations = true;
@@ -52,6 +53,7 @@ public class ExperimentConfiguration {
 		builder.put("improvePhase", improvePhase);
 		builder.put("migratePhase", migratePhase);
 		builder.put("concurrentExecutions", concurrentExecutions);
+		builder.put("timeout", timeout);
 		builder.put("priority", priority);
 		builder.put("printPopulations", printPopulations);
 		return Collections.unmodifiableMap(builder);
@@ -103,18 +105,24 @@ public class ExperimentConfiguration {
 
 	private ValidationResult areNumberOptionsPositive() {
 		// priority doesn't have to be positive
-		Set<Integer> fieldsToCheck = ImmutableSet.of(metaIterationsCount,
-				populationsCount, maxMetaIterationTime, concurrentExecutions,
-				numberOfExperimentRounds, numberOfParallelExperimentsInRound);
+		Set<Integer> integerFieldsToCheck = ImmutableSet.of(
+				metaIterationsCount, populationsCount, maxMetaIterationTime,
+				concurrentExecutions, numberOfExperimentRounds,
+				numberOfParallelExperimentsInRound);
 		Map<String, Integer> descriptionToInteger = new HashMap<String, Integer>();
 		getDescriptionToFieldsMap().forEach((desc, val) -> {
-			if (fieldsToCheck.contains(val)) {
+			if (integerFieldsToCheck.contains(val)) {
 				descriptionToInteger.put(desc, (Integer) val);
 			}
 		});
 
-		return ValidationUtils.checkPredicate(descriptionToInteger, i -> i > 0,
-				desc -> desc + " has to be >0.");
+		ValidationResult integerValidationResult = ValidationUtils
+				.checkPredicate(descriptionToInteger, i -> i > 0, desc -> desc
+						+ " has to be >0.");
+		if (timeout <= 0) {
+			integerValidationResult.addError("Timeout has to be >0.");
+		}
+		return integerValidationResult;
 	}
 
 	@Override
@@ -179,6 +187,10 @@ public class ExperimentConfiguration {
 
 	public Boolean isPrintPopulations() {
 		return printPopulations;
+	}
+
+	public Long getTimeout() {
+		return timeout;
 	}
 
 }

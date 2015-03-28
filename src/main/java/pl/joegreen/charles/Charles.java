@@ -229,7 +229,8 @@ public class Charles {
 				}).collect(Collectors.toCollection(ArrayList::new));
 		return edwardApiWrapper.addTasks(phaseJobIds.get(PhaseType.IMPROVE),
 				arguments, configuration.getPriority(),
-				configuration.getConcurrentExecutions());
+				configuration.getConcurrentExecutions(),
+				configuration.getTimeout());
 	}
 
 	private List<Population> getImprovedPopulations(List<Long> taskIdentifiers,
@@ -263,7 +264,7 @@ public class Charles {
 				.filter(taskId -> !results.containsKey(taskId))
 				.collect(Collectors.toList());
 		List<Optional<String>> intermediateResults = edwardApiWrapper
-				.returnTaskResultsIfDone(identifiersToGet);
+				.getTasksResultsIfDone(identifiersToGet);
 		for (int i = 0; i < identifiersToGet.size(); ++i) {
 			Long taskIdentifier = identifiersToGet.get(i);
 			Optional<String> result = intermediateResults.get(i);
