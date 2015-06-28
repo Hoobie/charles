@@ -24,6 +24,18 @@ public class EdwardApiConfiguration {
 			.configure(Feature.ALLOW_SINGLE_QUOTES, true)
 			.configure(Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
 
+	public EdwardApiConfiguration(String hostname, int port, String user,
+			String password, String prefix) {
+		this.hostname = hostname;
+		this.port = port;
+		this.user = user;
+		this.password = password;
+		this.prefix = prefix;
+	}
+
+	private EdwardApiConfiguration() {
+	}
+
 	private String hostname;
 	private int port;
 	private String user;

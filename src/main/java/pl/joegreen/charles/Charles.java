@@ -13,11 +13,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import javax.script.ScriptException;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -313,13 +311,14 @@ public class Charles {
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
-	public static void printAsPrettyJson(Map<Object, Object> map) {
+	public static String toPrettyJsonString(Map<Object, Object> map) {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
-			logger.info(mapper.writerWithDefaultPrettyPrinter()
-					.writeValueAsString(map));
+			return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(
+					map);
 		} catch (IOException ex) {
-			logger.error("Cannot parse json: " + map);
+			logger.error("Cannot write as json: " + map);
+			throw new IllegalArgumentException(ex);
 		}
 	}
 
@@ -336,8 +335,18 @@ public class Charles {
 			experimentConfigurationFilePath = args[1];
 		}
 
+		System.out.println(performExperiment(apiConfigurationFilePath,
+				experimentConfigurationFilePath));
+	}
+
+	public static String performExperiment(String apiConfigurationFilePath,
+			String experimentConfigurationFilePath) throws JsonParseException,
+			JsonMappingException, IOException {
 		ExperimentConfiguration experimentConfiguration = ExperimentConfiguration
 				.fromFile(experimentConfigurationFilePath);
+
+		EdwardApiConfiguration apiConfiguration = EdwardApiConfiguration
+				.fromFile(apiConfigurationFilePath);
 
 		ValidationResult experimentConfigurationValidationResult = experimentConfiguration
 				.isValid();
@@ -348,9 +357,6 @@ public class Charles {
 							+ " \n Received configuration: \n"
 							+ experimentConfiguration.toString());
 		}
-
-		EdwardApiConfiguration apiConfiguration = EdwardApiConfiguration
-				.fromFile(apiConfigurationFilePath);
 
 		ValidationResult apiConfigurationValidationResult = apiConfiguration
 				.isValid();
@@ -363,47 +369,23 @@ public class Charles {
 		}
 
 		ArrayList<Long> times = new ArrayList<Long>();
-		for (int i = 0; i < experimentConfiguration
-				.getNumberOfExperimentRounds(); ++i) {
-			long startTime = System.currentTimeMillis();
-			logger.info(String.format("Starting experiment round %d of %d", i,
-					experimentConfiguration.getNumberOfExperimentRounds()));
-			IntStream
-					.range(0,
-							experimentConfiguration
-									.getNumberOfParallelExperimentsInRound())
-					.parallel()
-					.forEach(
-							number -> {
-								Charles charles = new Charles(apiConfiguration,
-										experimentConfiguration);
-								try {
-									List<Population> populations = charles
-											.calculate();
-									if (experimentConfiguration
-											.isPrintPopulations()) {
-										printPopulations(populations);
-									}
-								} catch (Exception e) {
-									throw new RuntimeException(e);
-								}
-							});
-			long endTime = System.currentTimeMillis() - startTime;
-			times.add(endTime);
+		Charles charles = new Charles(apiConfiguration, experimentConfiguration);
+		try {
+			List<Population> populations = charles.calculate();
+			return populationsToString(populations);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 
-		String timesAsString = StringUtils.join(times, "\n");
-		logger.info("Times in each round [ms]: \n" + timesAsString);
-		long sum = times.stream().reduce(0L, (Long x, Long y) -> x + y);
-		logger.info("Total time [ms]: " + sum);
-		logger.info("Average time [ms]: " + sum / times.size());
 	}
 
-	private static void printPopulations(List<Population> populations) {
+	private static String populationsToString(List<Population> populations) {
+		StringBuilder builder = new StringBuilder();
 		for (int populationNumber = 0; populationNumber < populations.size(); ++populationNumber) {
-			logger.info("--- Population " + populationNumber + " ---");
-			printAsPrettyJson(populations.get(populationNumber)
-					.getMapRepresentation());
+			builder.append("--- Population " + populationNumber + " ---");
+			builder.append(toPrettyJsonString(populations.get(populationNumber)
+					.getMapRepresentation()));
 		}
+		return builder.toString();
 	}
 }

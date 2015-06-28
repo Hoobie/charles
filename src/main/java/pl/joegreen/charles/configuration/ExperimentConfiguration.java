@@ -23,8 +23,6 @@ public class ExperimentConfiguration {
 			.configure(Feature.ALLOW_SINGLE_QUOTES, true)
 			.configure(Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
 
-	private Integer numberOfExperimentRounds = 1;
-	private Integer numberOfParallelExperimentsInRound = 1;
 	private Integer metaIterationsCount;
 	private Integer populationsCount;
 	private Integer maxMetaIterationTime;
@@ -33,7 +31,6 @@ public class ExperimentConfiguration {
 	private Long timeout = 120000L;
 	private File source;
 	private Boolean asynchronous;
-	private Boolean printPopulations = true;
 
 	private PhaseParameters generatePhase;
 	private PhaseParameters improvePhase;
@@ -42,9 +39,6 @@ public class ExperimentConfiguration {
 	private Map<String, Object> getDescriptionToFieldsMap() {
 		Map<String, Object> builder = new HashMap<String, Object>();
 		builder.put("asynchronous", asynchronous);
-		builder.put("numberOfExperimentRounds", numberOfExperimentRounds);
-		builder.put("numberOfParallelExperimentsInRound",
-				numberOfParallelExperimentsInRound);
 		builder.put("populationsCount", populationsCount);
 		builder.put("metaIterationsCount", metaIterationsCount);
 		builder.put("populationsCount", populationsCount);
@@ -55,7 +49,6 @@ public class ExperimentConfiguration {
 		builder.put("concurrentExecutions", concurrentExecutions);
 		builder.put("timeout", timeout);
 		builder.put("priority", priority);
-		builder.put("printPopulations", printPopulations);
 		return Collections.unmodifiableMap(builder);
 	}
 
@@ -107,8 +100,7 @@ public class ExperimentConfiguration {
 		// priority doesn't have to be positive
 		Set<Integer> integerFieldsToCheck = ImmutableSet.of(
 				metaIterationsCount, populationsCount, maxMetaIterationTime,
-				concurrentExecutions, numberOfExperimentRounds,
-				numberOfParallelExperimentsInRound);
+				concurrentExecutions);
 		Map<String, Integer> descriptionToInteger = new HashMap<String, Integer>();
 		getDescriptionToFieldsMap().forEach((desc, val) -> {
 			if (integerFieldsToCheck.contains(val)) {
@@ -135,14 +127,6 @@ public class ExperimentConfiguration {
 				+ ", source=" + source + ", asynchronous=" + asynchronous
 				+ ", generatePhase=" + generatePhase + ", improvePhase="
 				+ improvePhase + ", migratePhase=" + migratePhase + "]";
-	}
-
-	public Integer getNumberOfExperimentRounds() {
-		return numberOfExperimentRounds;
-	}
-
-	public Integer getNumberOfParallelExperimentsInRound() {
-		return numberOfParallelExperimentsInRound;
 	}
 
 	public Integer getMetaIterationsCount() {
@@ -183,10 +167,6 @@ public class ExperimentConfiguration {
 
 	public PhaseParameters getMigratePhase() {
 		return migratePhase;
-	}
-
-	public Boolean isPrintPopulations() {
-		return printPopulations;
 	}
 
 	public Long getTimeout() {
