@@ -5,12 +5,9 @@
 	concurrentExecutions:1,
 	timeout:120000,
 	/* charles properties */
-	printPopulations: true,
-	numberOfExperimentRounds: 1,
-	numberOfParallelExperimentsInRound: 1,
-	asynchronous: true,  /*change to false if migrate.js is used */
+	asynchronous: false,  /*change to false if migrate.js is used */
 	metaIterationsCount:3,
-	populationsCount: 3,
+	populationsCount: 5,
 	maxMetaIterationTime: 100000,
 	generatePhase: {
 		codeFiles: ["config.js", "generate.js"],
@@ -19,10 +16,10 @@
 	improvePhase: {
 		codeFiles: ["config.js", "common.js","fight.js","fitness.js","localsearch.js","crossover.js","improveEMAS.js"],
 		parameters: {
-			iterations:100
+			iterations:20000
 		} 	
 	},
 	migratePhase: {
-		codeFiles: ["migrateAsync.js"] /*["migrate.js"] to use sync migration */
+		codeFiles: ["config.js", "common.js", "migrate.js"] /*["migrate.js"] to use sync migration */
 	}
 }
