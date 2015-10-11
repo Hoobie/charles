@@ -251,8 +251,8 @@ public class Charles {
 					results);
 		}
 		return ImmutableList.copyOf(taskIdentifiers.stream()
-				.map(taskId -> results.get(taskId))
-				.collect(Collectors.toCollection(ArrayList::new)));
+				.map(results::get)
+				.collect(Collectors.toList()));
 	}
 
 	private void retrieveImprovedPopulations(Collection<Long> taskIdentifiers,
