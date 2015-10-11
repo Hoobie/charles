@@ -40,7 +40,7 @@ function getRandomInt(min, max) {
 
 var calculateFitnessOfIndividual = function (individual) {
     var coordinates = individual.coordinates;
-    var fitness = 1.0 / rastriginFunction.apply(this, coordinates);
+    var fitness = -rastriginFunction.apply(this, coordinates);
 
     return fitness;
 }
