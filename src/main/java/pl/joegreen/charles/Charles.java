@@ -60,7 +60,7 @@ public class Charles {
 		this.edwardApiWrapper = new EdwardApiWrapper(apiConfiguration);
 		this.configuration = configuration;
 		String generateCode = CodeReader.readCode(configuration,
-				PhaseType.GENERATE);
+                PhaseType.GENERATE);
 		String improveCode = CodeReader.readCode(configuration,
 				PhaseType.IMPROVE);
 		String migrateCode = CodeReader.readCode(configuration,
@@ -77,61 +77,71 @@ public class Charles {
 
 		List<Population> populations = generatePopulationsLocally();
 		if (!configuration.isAsynchronous()) {
-			for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
-				logger.info("Performing meta iteration " + i);
-				if (i > 0) {
-					populations = migratePopulationsLocally(populations);
-				}
-				populations = improvePopulationsRemotely(populations);
-			}
+			populations = improveAndMigrateSynchronously(populations);
 		} else {
-			populations.forEach(population -> population.put(
-					META_ITERATION_NUMBER_PROPERTY, 0));
-			Set<Long> remoteTasks = new HashSet<Long>();
-
-			List<Population> finalResults = new ArrayList<Population>();
-
-			Population migrationPool = new Population(
-					new HashMap<Object, Object>());
-			migrationPool.put("individuals", new ArrayList<Object>());
-
-			List<Long> taskIdentifiers = sendPopulationsToVolunteers(populations);
-			remoteTasks.addAll(taskIdentifiers);
-
-			while (finalResults.size() < populations.size()) {
-
-				Map<Long, Population> results = new HashMap<Long, Population>();
-				retrieveImprovedPopulations(remoteTasks, results);
-				results.values()
-						.stream()
-						.forEach(
-								population -> population
-										.put(META_ITERATION_NUMBER_PROPERTY,
-												((Integer) population
-														.get(META_ITERATION_NUMBER_PROPERTY)) + 1));
-
-				results.values()
-						.forEach(
-								population -> {
-									if (((Integer) population
-											.get(META_ITERATION_NUMBER_PROPERTY))
-											.equals(configuration
-													.getMetaIterationsCount())) {
-										finalResults.add(population);
-									} else {
-										List<Long> identifiers = sendPopulationsToVolunteers(Arrays
-												.asList(migratePopulationLocallyAsynchronously(
-														population,
-														migrationPool)));
-										remoteTasks.add(identifiers.get(0));
-									}
-
-								});
-				remoteTasks.removeAll(results.keySet());
-			}
+			improveAndMigrateAsynchronously(populations);
 		}
 		return populations;
 	}
+
+	private List<Population> improveAndMigrateSynchronously(List<Population> populations) throws CannotExecuteFunctionException, RestException, IOException {
+		for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
+			logger.info("Performing meta iteration " + i);
+			if (i > 0) {
+				populations = migratePopulationsLocally(populations);
+			}
+			populations = improvePopulationsRemotely(populations);
+		}
+		return populations;
+	}
+
+	private void improveAndMigrateAsynchronously(List<Population> populations) throws RestException, IOException {
+		populations.forEach(population -> population.put(
+                META_ITERATION_NUMBER_PROPERTY, 0));
+		Set<Long> remoteTasks = new HashSet<Long>();
+
+		List<Population> finalResults = new ArrayList<Population>();
+
+		Population migrationPool = new Population(
+                new HashMap<Object, Object>());
+		migrationPool.put("individuals", new ArrayList<Object>());
+
+		List<Long> taskIdentifiers = sendPopulationsToVolunteers(populations);
+		remoteTasks.addAll(taskIdentifiers);
+
+		while (finalResults.size() < populations.size()) {
+
+            Map<Long, Population> results = new HashMap<Long, Population>();
+            retrieveImprovedPopulations(remoteTasks, results);
+            results.values()
+                    .stream()
+                    .forEach(
+							population -> population
+									.put(META_ITERATION_NUMBER_PROPERTY,
+                                            ((Integer) population
+                                                    .get(META_ITERATION_NUMBER_PROPERTY)) + 1));
+
+            results.values()
+                    .forEach(
+							population -> {
+								if (((Integer) population
+										.get(META_ITERATION_NUMBER_PROPERTY))
+										.equals(configuration
+                                                .getMetaIterationsCount())) {
+									finalResults.add(population);
+								} else {
+									List<Long> identifiers = sendPopulationsToVolunteers(Arrays
+											.asList(migratePopulationLocallyAsynchronously(
+                                                    population,
+                                                    migrationPool)));
+									remoteTasks.add(identifiers.get(0));
+								}
+
+							});
+            remoteTasks.removeAll(results.keySet());
+        }
+	}
+
 
 	private void initializeLocalJavaScriptEngine()
 			throws CannotInitializeExecutorException {
@@ -145,13 +155,13 @@ public class Charles {
 			Population population, Population pool) {
 		logger.info("Migrating population locally");
 		Map<Object, Object> argument = addOptionsToArgument(
-				population.getMapRepresentation(), "population",
-				PhaseType.MIGRATE);
+                population.getMapRepresentation(), "population",
+                PhaseType.MIGRATE);
 		argument.put("pool", pool.getMapRepresentation());
 		try {
 			Map<Object, Object> migrationResult = localExecutor
 					.executeFunction(PhaseType.MIGRATE.toFunctionName(),
-							argument);
+                            argument);
 			pool.put("individuals", ((Map<Object, Object>) migrationResult
 					.get("migrationPool")).get("individuals"));
 			Population populationAfterMigration = new Population(
@@ -218,23 +228,26 @@ public class Charles {
 		logger.info(String.format(
 				"Sending %d population improvements tasks to volunteers. ",
 				populations.size()));
+        long startTime = System.currentTimeMillis();
 		ArrayList<Map<Object, Object>> arguments = populations
 				.stream()
 				.map(population -> {
-					return addOptionsToArgument(
-							population.getMapRepresentation(), "population",
-							PhaseType.IMPROVE);
-				}).collect(Collectors.toCollection(ArrayList::new));
-		return edwardApiWrapper.addTasks(phaseJobIds.get(PhaseType.IMPROVE),
-				arguments, configuration.getPriority(),
-				configuration.getConcurrentExecutions(),
-				configuration.getTimeout());
-	}
+                    return addOptionsToArgument(
+                            population.getMapRepresentation(), "population",
+                            PhaseType.IMPROVE);
+                }).collect(Collectors.toCollection(ArrayList::new));
+        List<Long> taskIdentifiers = edwardApiWrapper.addTasks(phaseJobIds.get(PhaseType.IMPROVE),
+                arguments, configuration.getPriority(),
+                configuration.getConcurrentExecutions(),
+                configuration.getTimeout());
+        logger.info("Sending tasks to volunteers took {} ms ", System.currentTimeMillis() - startTime);
+        return taskIdentifiers;
+    }
 
 	private List<Population> getImprovedPopulations(List<Long> taskIdentifiers,
-			List<Population> oldPopulations) throws RestException,
-			JsonParseException, JsonMappingException, IOException {
+			List<Population> oldPopulations) throws RestException, IOException {
 		logger.info("Waiting for improved populations");
+        long startTime = System.currentTimeMillis();
 		Map<Long, Population> results = new HashMap<Long, Population>();
 		long waitingStartTime = System.currentTimeMillis();
 		while (results.size() < taskIdentifiers.size()
@@ -250,20 +263,24 @@ public class Charles {
 			useOldPopulationWhereNoImprovedYet(taskIdentifiers, oldPopulations,
 					results);
 		}
-		return ImmutableList.copyOf(taskIdentifiers.stream()
+        logger.info("Waiting for improved populations took {} ms ", System.currentTimeMillis() - startTime);
+        return ImmutableList.copyOf(taskIdentifiers.stream()
 				.map(results::get)
 				.collect(Collectors.toList()));
 	}
 
 	private void retrieveImprovedPopulations(Collection<Long> taskIdentifiers,
-			Map<Long, Population> results) throws RestException, IOException,
-			JsonParseException, JsonMappingException {
+			Map<Long, Population> results) throws RestException, IOException, JsonMappingException {
 		List<Long> identifiersToGet = taskIdentifiers.stream()
 				.filter(taskId -> !results.containsKey(taskId))
 				.collect(Collectors.toList());
-		List<Optional<String>> intermediateResults = edwardApiWrapper
-				.getTasksResultsIfDone(identifiersToGet);
-		for (int i = 0; i < identifiersToGet.size(); ++i) {
+        long startTime = System.currentTimeMillis();
+        List<Optional<String>> intermediateResults = edwardApiWrapper
+                .getTasksResultsIfDone(identifiersToGet);
+        if (!intermediateResults.isEmpty()) {
+            logger.info("Loading {} results took {} ms", intermediateResults.size(), System.currentTimeMillis() - startTime);
+        }
+        for (int i = 0; i < identifiersToGet.size(); ++i) {
 			Long taskIdentifier = identifiersToGet.get(i);
 			Optional<String> result = intermediateResults.get(i);
 			if (result.isPresent()) {
@@ -284,8 +301,8 @@ public class Charles {
 				.stream()
 				.filter(taskId -> !results.containsKey(taskId))
 				.forEach(
-						taskId -> results.put(taskId, oldPopulations
-								.get(taskIdentifiers.indexOf(taskId))));
+                        taskId -> results.put(taskId, oldPopulations
+                                .get(taskIdentifiers.indexOf(taskId))));
 		try {
 			edwardApiWrapper.abortTasks(taskIdentifiers);
 		} catch (RestException e) {
@@ -298,6 +315,7 @@ public class Charles {
 			Collection<Population> populations)
 			throws CannotExecuteFunctionException {
 		logger.info("Migrating populations locally");
+		long startTime = System.currentTimeMillis();
 		Collection<Map<Object, Object>> representations = populations.stream()
 				.map(Population::getMapRepresentation)
 				.collect(Collectors.toList());
@@ -307,7 +325,8 @@ public class Charles {
 				PhaseType.MIGRATE.toFunctionName(), argument);
 		List<Map<Object, Object>> newPopulations = (List<Map<Object, Object>>) result
 				.get("populations");
-		return newPopulations.stream().map(asMap -> new Population(asMap))
+        logger.info("Migrating populations locally took {} ms", (System.currentTimeMillis() - startTime));
+        return newPopulations.stream().map(asMap -> new Population(asMap))
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
