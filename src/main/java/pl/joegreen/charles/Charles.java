@@ -76,6 +76,9 @@ public class Charles {
 		initializeVolunteerComputingJobs();
 
 		List<Population> populations = generatePopulationsLocally();
+		if(logger.isTraceEnabled()) {
+			logger.trace("Generated populations: \n {} ", populationsToString(populations));
+		}
 		if (!configuration.isAsynchronous()) {
 			populations = improveAndMigrateSynchronously(populations);
 		} else {
@@ -91,7 +94,10 @@ public class Charles {
 				populations = migratePopulationsLocally(populations);
 			}
 			populations = improvePopulationsRemotely(populations);
-		}
+            if (logger.isTraceEnabled()) {
+                logger.trace("Improved populations: \n {} ", populationsToString(populations));
+            }
+        }
 		return populations;
 	}
 
