@@ -404,7 +404,7 @@ public class Charles {
 
 	}
 
-	private static String populationsToString(List<Population> populations) {
+	public static String populationsToString(List<Population> populations) {
 		StringBuilder builder = new StringBuilder();
 		for (int populationNumber = 0; populationNumber < populations.size(); ++populationNumber) {
 			builder.append("--- Population " + populationNumber + " ---");
