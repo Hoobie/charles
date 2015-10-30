@@ -283,8 +283,8 @@ public class Charles {
         long startTime = System.currentTimeMillis();
         List<Optional<String>> intermediateResults = edwardApiWrapper
                 .getTasksResultsIfDone(identifiersToGet);
-        if (!intermediateResults.isEmpty()) {
-            logger.info("Loading {} results took {} ms", intermediateResults.size(), System.currentTimeMillis() - startTime);
+        if (intermediateResults.stream().anyMatch(Optional::isPresent)) {
+            logger.info("Loading {} results took {} ms", intermediateResults.stream().filter(Optional::isPresent).count(), System.currentTimeMillis() - startTime);
         }
         for (int i = 0; i < identifiersToGet.size(); ++i) {
 			Long taskIdentifier = identifiersToGet.get(i);
