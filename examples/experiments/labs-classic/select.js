@@ -28,13 +28,18 @@ var select = function (population, populationSizeAfterSelect) {
         }
     });
 
+    function copyIndividual(individual){
+        return {fitness: individual.fitness, bytes: individual.bytes.slice()};
+    }
+
+
     var selectIndividual = function () {
         var rand = Math.random();
 
         for (var index = 0; index < cumulativeScaledFitnesses.length; ++index) {
             var cumulativeScaledFitness = cumulativeScaledFitnesses[index];
             if (cumulativeScaledFitness > rand) {
-                return individuals[index];
+                return copyIndividual(individuals[index]);
             }
         }
     }
