@@ -5,12 +5,12 @@
 	<name>charles</name>
 	<artifactId>charles</artifactId>
 	<groupId>pl.joegreen.charles</groupId>
-	<version>0.5-SNAPSHOT</version>
+	<version>0.5</version>
 	<packaging>jar</packaging>
 	
 	<scm>
 		<developerConnection>scm:git:local:.</developerConnection>
-	  <tag>HEAD</tag>
+	  <tag>0.5</tag>
   </scm>
 	
 	<distributionManagement>
