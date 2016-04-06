@@ -5,9 +5,6 @@
 	concurrentExecutions:1,
 	timeout:120000,
 	/* charles properties */
-	printPopulations: true,
-	numberOfExperimentRounds: 1,
-	numberOfParallelExperimentsInRound: 1,
 	asynchronous: false,
 	metaIterationsCount:3,
 	populationsCount: 3,

@@ -38,7 +38,7 @@ public class EdwardApiWrapper {
 
 	public long createProjectAndGetId(String projectName) {
 		try {
-			return restClient.addProject(projectName, 1L).getId();
+			return restClient.addProject(projectName).getId();
 		} catch (RestException e) {
 			throw new RuntimeException(e);
 		}
