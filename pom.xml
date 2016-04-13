@@ -13,28 +13,6 @@
 	  <tag>HEAD</tag>
   </scm>
 	
-	<distributionManagement>
-		<repository>
-			<id>bachor-joegreen</id>
-			<name>releases@bachor-joegreen</name>
-			<url>http://bachor.joegreen.pl:8081/nexus/content/repositories/releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>bachor-joegreen</id>
-			<name>snapshots@bachor-joegreen</name>
-			<url>http://bachor.joegreen.pl:8081/nexus/content/repositories/snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
-	<repositories>
-		<repository>
-			<id>releases@bachor-joegreen</id>
-			<url>http://bachor.joegreen.pl:8081/nexus/content/repositories/releases/</url>
-		</repository>
-		<repository>
-			<id>snapshots@bachor-joegreen</id>
-			<url>http://bachor.joegreen.pl:8081/nexus/content/repositories/snapshots/</url>
-		</repository>
-	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>pl.joegreen.edward</groupId>
