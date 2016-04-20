@@ -1,24 +1,13 @@
 package pl.joegreen.charles;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.script.ScriptException;
-
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import pl.joegreen.charles.communication.EdwardApiWrapper;
 import pl.joegreen.charles.configuration.CodeReader;
 import pl.joegreen.charles.configuration.EdwardApiConfiguration;
@@ -29,13 +18,13 @@ import pl.joegreen.charles.executor.exception.CannotExecuteFunctionException;
 import pl.joegreen.charles.executor.exception.CannotInitializeExecutorException;
 import pl.joegreen.edward.rest.client.RestException;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
-import com.google.common.collect.ImmutableMap;
+import javax.script.ScriptException;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.google.common.collect.Lists.newArrayList;
 
 public class Charles {
 
@@ -87,10 +76,29 @@ public class Charles {
 		return populations;
 	}
 
-	private List<Population> improveAndMigrateSynchronously(List<Population> populations) throws CannotExecuteFunctionException, RestException, IOException {
+	private List<Population> improveAndMigrateSynchronously(List<Population> populations)
+			throws CannotExecuteFunctionException, RestException, IOException {
 		for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
-			logger.info("Performing meta iteration " + i);
-			if (i > 0) {
+            logger.info("Performing meta iteration " + i);
+            Long volunteersPopulationsDelta = edwardApiWrapper.getVolunteersCount() - populations.size();
+            if (volunteersPopulationsDelta > 0) {
+                for (int j = 0; j < volunteersPopulationsDelta; j++) {
+					// TODO: extract method
+                    Map<Object, Object> phaseParameters = configuration
+                            .getPhaseConfiguration(PhaseType.GENERATE).getParameters();
+                    Population generatedPopulation = new Population(
+                            localExecutor.executeFunction(
+                                    PhaseType.GENERATE.toFunctionName(),
+                                    phaseParameters));
+                    populations.add(generatedPopulation);
+                }
+            } else {
+                for (int j = 0; j < Math.abs(volunteersPopulationsDelta); j++) {
+                    populations.remove(0);
+                }
+            }
+
+            if (i > 0) {
 				populations = migratePopulationsLocally(populations);
 			}
 			populations = improvePopulationsRemotely(populations);
@@ -209,17 +217,17 @@ public class Charles {
 	private List<Population> generatePopulationsLocally()
 			throws CannotExecuteFunctionException {
 		logger.info("Generating populations locally");
-		ImmutableList.Builder<Population> listBuilder = new Builder<Population>();
-		for (int i = 0; i < configuration.getPopulationsCount(); ++i) {
+		List<Population> populations = newArrayList();
+		for (int i = 0; i < edwardApiWrapper.getVolunteersCount(); ++i) {
 			Map<Object, Object> phaseParameters = configuration
 					.getPhaseConfiguration(PhaseType.GENERATE).getParameters();
 			Population generatedPopulation = new Population(
 					localExecutor.executeFunction(
 							PhaseType.GENERATE.toFunctionName(),
 							phaseParameters));
-			listBuilder.add(generatedPopulation);
+			populations.add(generatedPopulation);
 		}
-		return listBuilder.build();
+		return populations;
 	}
 
 	private List<Population> improvePopulationsRemotely(

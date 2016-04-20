@@ -1,19 +1,17 @@
 package pl.joegreen.charles.communication;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import pl.joegreen.charles.configuration.EdwardApiConfiguration;
 import pl.joegreen.edward.core.model.Project;
 import pl.joegreen.edward.rest.client.RestClient;
 import pl.joegreen.edward.rest.client.RestException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class EdwardApiWrapper {
 
@@ -86,6 +84,14 @@ public class EdwardApiWrapper {
 					.filter(project -> project.getName().equals(projectName))
 					.findFirst();
 			return projectWithName.map(project -> project.getId());
+		} catch (RestException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
+	public Long getVolunteersCount() {
+		try {
+			return restClient.getVolunteerCount();
 		} catch (RestException ex) {
 			throw new RuntimeException(ex);
 		}
