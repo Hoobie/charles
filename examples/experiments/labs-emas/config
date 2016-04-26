@@ -15,6 +15,7 @@
 	},
 	improvePhase: {
 		codeFiles: ["config.js", "common.js","fight.js","fitness.js","localsearch.js","crossover.js","improveEMAS.js"],
+		/* codeFiles: ["config.js", "common.js","fight.js","baldwinFitness.js","crossover.js","improveEMAS.js"], */
 		parameters: {
 			iterations:20000
 		} 	

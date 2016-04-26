@@ -8,7 +8,7 @@ function improve(population, parameters){
         calculateFitnesses(population)
         fight(population)
         crossOver(population);
-        improvePopulationByLocalSearches(population);
+        improvePopulationByLocalSearches(population); // TODO comment if baldwin fitness will be used
     }
     calculateFitnesses(population)
     return population;
