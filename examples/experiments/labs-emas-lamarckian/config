@@ -14,6 +14,7 @@
 		parameters: {individualsCount:30, bytesCount:10}
 	},
 	improvePhase: {
+		codeFiles: ["config.js", "common.js","fight.js","fitness.js","localsearch.js","crossover.js","improveEMAS.js"],
 		codeFiles: ["config.js", "improve.js"],
 		parameters: {
 			iterations:20000

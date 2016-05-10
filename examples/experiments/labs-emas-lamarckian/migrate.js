@@ -1,6 +1,5 @@
 var migrate = function (firstPopulation, secondPopulation, parameters) {
     var migrationCandidate = [];
-
     populations = [firstPopulation, secondPopulation]
     populations.forEach(function (population) {
         population.individuals.filter(function (individual) {
