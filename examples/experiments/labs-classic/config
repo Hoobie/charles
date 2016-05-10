@@ -25,6 +25,7 @@
 		} 	
 	},
 	migratePhase: {
-		codeFiles: ["migrate.js"]
+		codeFiles: ["migrate.js"],
+		parameters: {toMigrate: 5}
 	}
 }
