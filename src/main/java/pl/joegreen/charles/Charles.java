@@ -78,9 +78,12 @@ public class Charles {
 
 	private List<Population> improveAndMigrateSynchronously(List<Population> populations)
 			throws CannotExecuteFunctionException, RestException, IOException {
+
+        // Use linked list so as to be able to remove from it w/o any errors ;)
+        LinkedList<Population> linkedPopulations = new LinkedList<>(populations);
 		for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
             logger.info("Performing meta iteration " + i);
-            Long volunteersPopulationsDelta = edwardApiWrapper.getVolunteersCount() - populations.size();
+            Long volunteersPopulationsDelta = edwardApiWrapper.getVolunteersCount() - linkedPopulations.size();
             if (volunteersPopulationsDelta > 0) {
                 for (int j = 0; j < volunteersPopulationsDelta; j++) {
 					// TODO: extract method
@@ -90,16 +93,16 @@ public class Charles {
                             localExecutor.executeFunction(
                                     PhaseType.GENERATE.toFunctionName(),
                                     phaseParameters));
-                    populations.add(generatedPopulation);
+                    linkedPopulations.add(generatedPopulation);
                 }
             } else {
-                for (int j = 0; j < Math.abs(volunteersPopulationsDelta); j++) {
-                    populations.remove(0);
+                for (int j = 0; j < Math.abs(volunteersPopulationsDelta) && linkedPopulations.size() > 0; j++) {
+                    linkedPopulations.remove(0);
                 }
             }
 
             if (i > 0) {
-				populations = migratePopulationsLocally(populations);
+				populations = migratePopulationsLocally(linkedPopulations);
 			}
 			populations = improvePopulationsRemotely(populations);
             if (logger.isTraceEnabled()) {
@@ -330,16 +333,42 @@ public class Charles {
 			throws CannotExecuteFunctionException {
 		logger.info("Migrating populations locally");
 		long startTime = System.currentTimeMillis();
+
 		Collection<Map<Object, Object>> representations = populations.stream()
 				.map(Population::getMapRepresentation)
 				.collect(Collectors.toList());
-		Map<Object, Object> argument = addOptionsToArgument(representations,
-				"populations", PhaseType.MIGRATE);
-		Map<Object, Object> result = localExecutor.executeFunction(
-				PhaseType.MIGRATE.toFunctionName(), argument);
-		List<Map<Object, Object>> newPopulations = (List<Map<Object, Object>>) result
-				.get("populations");
-        logger.info("Migrating populations locally took {} ms", (System.currentTimeMillis() - startTime));
+
+        logger.info("Populations before migrate: " + representations);
+
+		Map<Object, Object> functionArguments;
+		Map<Object, Object> functionResult;
+		List<Map<Object, Object>> newPopulations = new ArrayList<>();
+		for (Map<Object, Object> firstPopulation : representations) {
+			for (Map<Object, Object> secondPopulation : representations) {
+				functionArguments = new HashMap<>();
+				functionArguments.put("firstPopulation", firstPopulation);
+				functionArguments.put("secondPopulation", secondPopulation);
+
+				// Add config
+				functionArguments.put("parameters", configuration.getPhaseConfiguration(PhaseType.MIGRATE)
+						.getParameters());
+
+				// Execute migrate.js
+				functionResult = localExecutor.executeFunction(
+						PhaseType.MIGRATE.toFunctionName(), functionArguments);
+
+                // 'Parse' response
+				newPopulations.add((Map<Object, Object>) ((Map<Object, Object>) functionResult
+    				.get("populations")).get("firstPopulation"));
+                newPopulations.add((Map<Object, Object>) ((Map<Object, Object>) functionResult
+                        .get("populations")).get("secondPopulation"));
+			}
+		}
+
+
+        logger.info("Populations after migrate: " + newPopulations);
+
+		logger.info("Migrating populations locally took {} ms", (System.currentTimeMillis() - startTime));
         return newPopulations.stream().map(asMap -> new Population(asMap))
 				.collect(Collectors.toCollection(ArrayList::new));
 	}

@@ -54,7 +54,7 @@ public class CodeReader {
 			if (configuration.isAsynchronous()) {
 				builder.append("function(input){return migrate(input.population, input.pool, input.parameters)}");
 			} else {
-				builder.append("function(input){return {populations: migrate(input.populations, input.parameters)}}");
+				builder.append("function(input){return {populations: migrate(input.firstPopulation, input.secondPopulation, input.parameters)}}");
 			}
 			break;
 		}
