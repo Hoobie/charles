@@ -17,6 +17,6 @@ var migrate = function (firstPopulation, secondPopulation, parameters) {
         } else {
             secondPopulation.individuals.push(individual)
         }
-    });
+    })
     return {firstPopulation: firstPopulation, secondPopulation: secondPopulation};
 };
