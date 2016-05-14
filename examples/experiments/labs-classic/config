@@ -11,7 +11,7 @@
 	maxMetaIterationTime: 100000,
 	generatePhase: {
 		codeFiles: ["generate.js"],
-		parameters: {individualsCount:50, bytesCount:7}
+		parameters: {individualsCount:30, bytesCount:10}
 	},
 	improvePhase: {
 		codeFiles: ["common.js",

@@ -80,7 +80,7 @@ public class Charles {
 			throws CannotExecuteFunctionException, RestException, IOException {
 
         // Use linked list so as to be able to remove from it w/o any errors ;)
-        LinkedList<Population> linkedPopulations = new LinkedList<>(populations);
+        List<Population> linkedPopulations = new LinkedList<>(populations);
 		for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
             logger.info("Performing meta iteration " + i);
             Long volunteersPopulationsDelta = edwardApiWrapper.getVolunteersCount() - linkedPopulations.size();
@@ -93,23 +93,23 @@ public class Charles {
                             localExecutor.executeFunction(
                                     PhaseType.GENERATE.toFunctionName(),
                                     phaseParameters));
-                    linkedPopulations.add(generatedPopulation);
+					linkedPopulations.add(generatedPopulation);
                 }
             } else {
                 for (int j = 0; j < Math.abs(volunteersPopulationsDelta) && linkedPopulations.size() > 0; j++) {
-                    linkedPopulations.remove(0);
+					linkedPopulations.remove(0);
                 }
             }
 
             if (i > 0) {
-				populations = migratePopulationsLocally(linkedPopulations);
+				linkedPopulations = migratePopulationsLocally(linkedPopulations);
 			}
-			populations = improvePopulationsRemotely(populations);
+			linkedPopulations = improvePopulationsRemotely(linkedPopulations);
             if (logger.isTraceEnabled()) {
-                logger.trace("Improved populations: \n {} ", populationsToString(populations));
+                logger.trace("Improved populations: \n {} ", populationsToString(linkedPopulations));
             }
         }
-		return populations;
+		return linkedPopulations;
 	}
 
 	private void improveAndMigrateAsynchronously(List<Population> populations) throws RestException, IOException {
@@ -281,9 +281,9 @@ public class Charles {
 					results);
 		}
         logger.info("Waiting for improved populations took {} ms ", System.currentTimeMillis() - startTime);
-        return ImmutableList.copyOf(taskIdentifiers.stream()
+        return taskIdentifiers.stream()
 				.map(results::get)
-				.collect(Collectors.toList()));
+				.collect(Collectors.toList());
 	}
 
 	private void retrieveImprovedPopulations(Collection<Long> taskIdentifiers,
@@ -329,7 +329,7 @@ public class Charles {
 	}
 
 	private List<Population> migratePopulationsLocally(
-			Collection<Population> populations)
+			List<Population> populations)
 			throws CannotExecuteFunctionException {
 		logger.info("Migrating populations locally");
 		long startTime = System.currentTimeMillis();
@@ -342,35 +342,38 @@ public class Charles {
 
 		Map<Object, Object> functionArguments;
 		Map<Object, Object> functionResult;
-		List<Map<Object, Object>> newPopulations = new ArrayList<>();
+		//List<Map<Object, Object>> newPopulations = new ArrayList<>();
 		for (Map<Object, Object> firstPopulation : representations) {
 			for (Map<Object, Object> secondPopulation : representations) {
-				functionArguments = new HashMap<>();
-				functionArguments.put("firstPopulation", firstPopulation);
-				functionArguments.put("secondPopulation", secondPopulation);
+				if (!firstPopulation.equals(secondPopulation)) {
+					functionArguments = new HashMap<>();
+					functionArguments.put("firstPopulation", firstPopulation);
+					functionArguments.put("secondPopulation", secondPopulation);
 
-				// Add config
-				functionArguments.put("parameters", configuration.getPhaseConfiguration(PhaseType.MIGRATE)
-						.getParameters());
+					// Add config
+					functionArguments.put("parameters", configuration.getPhaseConfiguration(PhaseType.MIGRATE)
+							.getParameters());
 
-				// Execute migrate.js
-				functionResult = localExecutor.executeFunction(
-						PhaseType.MIGRATE.toFunctionName(), functionArguments);
+					// Execute migrate.js
+					functionResult = localExecutor.executeFunction(
+							PhaseType.MIGRATE.toFunctionName(), functionArguments);
 
-                // 'Parse' response
-				newPopulations.add((Map<Object, Object>) ((Map<Object, Object>) functionResult
-    				.get("populations")).get("firstPopulation"));
-                newPopulations.add((Map<Object, Object>) ((Map<Object, Object>) functionResult
-                        .get("populations")).get("secondPopulation"));
+					// 'Parse' response
+					firstPopulation.clear();
+					firstPopulation.putAll((Map<Object, Object>) ((Map<Object, Object>) functionResult
+							.get("populations")).get("firstPopulation"));
+					secondPopulation.clear();
+					secondPopulation.putAll((Map<Object, Object>) ((Map<Object, Object>) functionResult
+							.get("populations")).get("secondPopulation"));
+				}
 			}
 		}
 
 
-        logger.info("Populations after migrate: " + newPopulations);
+        logger.info("Populations after migrate:  " + representations);
 
 		logger.info("Migrating populations locally took {} ms", (System.currentTimeMillis() - startTime));
-        return newPopulations.stream().map(asMap -> new Population(asMap))
-				.collect(Collectors.toCollection(ArrayList::new));
+        return populations;
 	}
 
 	public static String toPrettyJsonString(Map<Object, Object> map) {

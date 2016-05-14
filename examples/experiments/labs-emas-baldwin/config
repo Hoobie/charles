@@ -20,6 +20,6 @@
 		} 	
 	},
 	migratePhase: {
-		codeFiles: ["config.js", "common.js"]
+		codeFiles: ["config.js", "migrate.js"]
 	}
 }
