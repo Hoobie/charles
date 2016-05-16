@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,8 +22,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.google.common.collect.Lists.newArrayList;
 
 public class Charles {
 
@@ -79,37 +76,34 @@ public class Charles {
 	private List<Population> improveAndMigrateSynchronously(List<Population> populations)
 			throws CannotExecuteFunctionException, RestException, IOException {
 
-        // Use linked list so as to be able to remove from it w/o any errors ;)
-        List<Population> linkedPopulations = new LinkedList<>(populations);
 		for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
             logger.info("Performing meta iteration " + i);
-            Long volunteersPopulationsDelta = edwardApiWrapper.getVolunteersCount() - linkedPopulations.size();
+            Long volunteersPopulationsDelta = edwardApiWrapper.getVolunteersCount() - populations.size();
             if (volunteersPopulationsDelta > 0) {
                 for (int j = 0; j < volunteersPopulationsDelta; j++) {
-					// TODO: extract method
                     Map<Object, Object> phaseParameters = configuration
                             .getPhaseConfiguration(PhaseType.GENERATE).getParameters();
                     Population generatedPopulation = new Population(
                             localExecutor.executeFunction(
                                     PhaseType.GENERATE.toFunctionName(),
                                     phaseParameters));
-					linkedPopulations.add(generatedPopulation);
+					populations.add(generatedPopulation);
                 }
             } else {
-                for (int j = 0; j < Math.abs(volunteersPopulationsDelta) && linkedPopulations.size() > 0; j++) {
-					linkedPopulations.remove(0);
+                for (int j = 0; j < Math.abs(volunteersPopulationsDelta) && populations.size() > 0; j++) {
+					populations.remove(populations.size() - 1);
                 }
             }
 
             if (i > 0) {
-				linkedPopulations = migratePopulationsLocally(linkedPopulations);
+				populations = migratePopulationsLocally(populations);
 			}
-			linkedPopulations = improvePopulationsRemotely(linkedPopulations);
+			populations = improvePopulationsRemotely(populations);
             if (logger.isTraceEnabled()) {
-                logger.trace("Improved populations: \n {} ", populationsToString(linkedPopulations));
+                logger.trace("Improved populations: \n {} ", populationsToString(populations));
             }
         }
-		return linkedPopulations;
+		return populations;
 	}
 
 	private void improveAndMigrateAsynchronously(List<Population> populations) throws RestException, IOException {
@@ -220,7 +214,7 @@ public class Charles {
 	private List<Population> generatePopulationsLocally()
 			throws CannotExecuteFunctionException {
 		logger.info("Generating populations locally");
-		List<Population> populations = newArrayList();
+		List<Population> populations = new ArrayList<>();
 		for (int i = 0; i < edwardApiWrapper.getVolunteersCount(); ++i) {
 			Map<Object, Object> phaseParameters = configuration
 					.getPhaseConfiguration(PhaseType.GENERATE).getParameters();
@@ -328,9 +322,8 @@ public class Charles {
 		}
 	}
 
-	private List<Population> migratePopulationsLocally(
-			List<Population> populations)
-			throws CannotExecuteFunctionException {
+	private List<Population> migratePopulationsLocally(List<Population> populations)
+            throws CannotExecuteFunctionException {
 		logger.info("Migrating populations locally");
 		long startTime = System.currentTimeMillis();
 
@@ -342,7 +335,7 @@ public class Charles {
 
 		Map<Object, Object> functionArguments;
 		Map<Object, Object> functionResult;
-		//List<Map<Object, Object>> newPopulations = new ArrayList<>();
+
 		for (Map<Object, Object> firstPopulation : representations) {
 			for (Map<Object, Object> secondPopulation : representations) {
 				if (!firstPopulation.equals(secondPopulation)) {
@@ -369,10 +362,9 @@ public class Charles {
 			}
 		}
 
-
-        logger.info("Populations after migrate:  " + representations);
-
+        logger.info("Populations after migrate: " + representations);
 		logger.info("Migrating populations locally took {} ms", (System.currentTimeMillis() - startTime));
+
         return populations;
 	}
 
