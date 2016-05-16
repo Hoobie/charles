@@ -39,8 +39,7 @@ public class Charles {
 
 	private LocalExecutor localExecutor = new LocalExecutor();
 
-	private Long projectId;
-	private Map<PhaseType, Long> phaseJobIds;
+    private Map<PhaseType, Long> phaseJobIds;
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -147,7 +146,6 @@ public class Charles {
         }
 	}
 
-
 	private void initializeLocalJavaScriptEngine()
 			throws CannotInitializeExecutorException {
 		for (PhaseType phaseType : PhaseType.getLocalPhases()) {
@@ -164,8 +162,7 @@ public class Charles {
 		try {
 			Map<Object, Object> migrationResult = localExecutor.executeFunction(PhaseType.MIGRATE.toFunctionName(),
 					argument);
-			pool.put("individuals", ((Map<Object, Object>) migrationResult.get("migrationPool"))
-					.get("individuals"));
+			pool.put("individuals", ((Map<Object, Object>) migrationResult.get("migrationPool")).get("individuals"));
 			Population populationAfterMigration = new Population((Map<Object, Object>) migrationResult.get("population"));
 			return populationAfterMigration;
 		} catch (Exception e) {
@@ -174,18 +171,15 @@ public class Charles {
 	}
 
 	private void initializeVolunteerComputingJobs() {
-		projectId = edwardApiWrapper.findProjectWithName(PROJECT_NAME).orElse(
-				null);
+        Long projectId = edwardApiWrapper.findProjectWithName(PROJECT_NAME).orElse(null);
 		if (projectId == null) {
 			projectId = edwardApiWrapper.createProjectAndGetId(PROJECT_NAME);
 		}
 
-		String jobNameSuffix = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss")
-				.format(new Date());
-		phaseJobIds = new HashMap<PhaseType, Long>();
+		String jobNameSuffix = new SimpleDateFormat(" yyyy-MM-dd HH:mm:ss").format(new Date());
+		phaseJobIds = new HashMap<>();
 		for (PhaseType phaseType : PhaseType.getRemotePhases()) {
-			Long jobId = edwardApiWrapper.createJobAndGetId(projectId,
-					phaseType.toFunctionName() + jobNameSuffix,
+			Long jobId = edwardApiWrapper.createJobAndGetId(projectId, phaseType.toFunctionName() + jobNameSuffix,
 					phaseCodes.get(phaseType));
 			phaseJobIds.put(phaseType, jobId);
 		}
@@ -193,10 +187,9 @@ public class Charles {
 
 	private Map<Object, Object> addOptionsToArgument(Object argument,
 			String argumentName, PhaseType phaseType) {
-		Map<Object, Object> map = new HashMap<Object, Object>();
+		Map<Object, Object> map = new HashMap<>();
 		map.put(argumentName, argument);
-		map.put("parameters", configuration.getPhaseConfiguration(phaseType)
-				.getParameters());
+		map.put("parameters", configuration.getPhaseConfiguration(phaseType).getParameters());
 		return map;
 	}
 
@@ -277,8 +270,7 @@ public class Charles {
 			Long taskIdentifier = identifiersToGet.get(i);
 			Optional<String> result = intermediateResults.get(i);
 			if (result.isPresent()) {
-				logger.info("Received improved population from task "
-						+ taskIdentifier);
+				logger.info("Received improved population from task " + taskIdentifier);
 				results.put(taskIdentifier, new Population(objectMapper.readValue(result.get(), Map.class)));
 			}
 		}
@@ -316,20 +308,18 @@ public class Charles {
 			functionArguments.put("secondPopulation", secondPopulation);
 
 			// Add config
-			functionArguments.put("parameters", configuration.getPhaseConfiguration(PhaseType.MIGRATE)
-					.getParameters());
+			functionArguments.put("parameters", configuration.getPhaseConfiguration(PhaseType.MIGRATE).getParameters());
 
 			// Execute migrate.js
-			functionResult = localExecutor.executeFunction(
-					PhaseType.MIGRATE.toFunctionName(), functionArguments);
+			functionResult = localExecutor.executeFunction(PhaseType.MIGRATE.toFunctionName(), functionArguments);
 
 			// 'Parse' response
 			firstPopulation.clear();
-			firstPopulation.putAll((Map<Object, Object>) ((Map<Object, Object>) functionResult
-					.get("populations")).get("firstPopulation"));
+			firstPopulation.putAll((Map<Object, Object>) ((Map<Object, Object>) functionResult.get("populations"))
+                    .get("firstPopulation"));
 			secondPopulation.clear();
-			secondPopulation.putAll((Map<Object, Object>) ((Map<Object, Object>) functionResult
-					.get("populations")).get("secondPopulation"));
+			secondPopulation.putAll((Map<Object, Object>) ((Map<Object, Object>) functionResult.get("populations"))
+                    .get("secondPopulation"));
 		}
 
         logger.info("Populations after migrate: " + populations.toString());
