@@ -78,7 +78,7 @@ public class Charles {
 
 		for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
             logger.info("Performing meta iteration " + i);
-            Long volunteersPopulationsDelta = edwardApiWrapper.getVolunteersCount() - populations.size();
+            long volunteersPopulationsDelta = Math.abs(edwardApiWrapper.getVolunteersCount() - populations.size());
             if (volunteersPopulationsDelta > 0) {
                 for (int j = 0; j < volunteersPopulationsDelta; j++) {
                     Map<Object, Object> phaseParameters = configuration
@@ -87,10 +87,12 @@ public class Charles {
                             localExecutor.executeFunction(
                                     PhaseType.GENERATE.toFunctionName(),
                                     phaseParameters));
+					logger.info("Adding {} population(s)", volunteersPopulationsDelta);
 					populations.add(generatedPopulation);
                 }
             } else {
-                for (int j = 0; j < Math.abs(volunteersPopulationsDelta) && populations.size() > 0; j++) {
+				for (int j = 0; j < volunteersPopulationsDelta && populations.size() > 0; j++) {
+					logger.info("Removing {} population(s)", volunteersPopulationsDelta);
 					populations.remove(populations.size() - 1);
                 }
             }
@@ -323,7 +325,7 @@ public class Charles {
 	}
 
 	private List<Population> migratePopulationsLocally(List<Population> populations)
-            throws CannotExecuteFunctionException {
+			throws CannotExecuteFunctionException {
 		logger.info("Migrating populations locally");
 		long startTime = System.currentTimeMillis();
 
