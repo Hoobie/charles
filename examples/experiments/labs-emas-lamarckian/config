@@ -6,7 +6,7 @@
 	timeout:120000,
 	/* charles properties */
 	asynchronous: false,  /*change to false if migrate.js is used */
-	metaIterationsCount:3,
+	metaIterationsCount:10,
 	populationsCount: 5,
 	maxMetaIterationTime: 100000,
 	generatePhase: {
@@ -14,7 +14,6 @@
 		parameters: {individualsCount:30, bytesCount:10}
 	},
 	improvePhase: {
-		codeFiles: ["config.js", "common.js","fight.js","fitness.js","localsearch.js","crossover.js","improveEMAS.js"],
 		codeFiles: ["config.js", "improve.js"],
 		parameters: {
 			iterations:20000

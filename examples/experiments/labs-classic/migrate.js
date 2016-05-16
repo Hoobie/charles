@@ -1,11 +1,11 @@
 var migrate = function (firstPopulation, secondPopulation, parameters) {
-    for (i = 0; i < parameters.toMigrate; i++) {
-        var firstIndex = Math.floor((Math.random() * firstPopulation.length))
-        var secondIndex = Math.floor((Math.random() * secondPopulation.length))
+    for (var i = 0; i < parameters.toMigrate; i++) {
+        var firstIndex = Math.floor((Math.random() * firstPopulation.individuals.length))
+        var secondIndex = Math.floor((Math.random() * secondPopulation.individuals.length))
 
-        var temp = firstPopulation[firstIndex];
-        firstPopulation[firstIndex] = secondPopulation[secondIndex];
-        secondPopulation[secondIndex] = temp;
+        var temp = firstPopulation.individuals[i];
+        firstPopulation.individuals[i] = secondPopulation.individuals[i];
+        secondPopulation.individuals[i] = temp;
     }
 
     return {firstPopulation: firstPopulation, secondPopulation: secondPopulation};

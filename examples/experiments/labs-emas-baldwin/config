@@ -6,7 +6,7 @@
 	timeout:120000,
 	/* charles properties */
 	asynchronous: false,  /*change to false if migrate.js is used */
-	metaIterationsCount:3,
+	metaIterationsCount:10,
 	populationsCount: 5,
 	maxMetaIterationTime: 100000,
 	generatePhase: {
@@ -20,6 +20,6 @@
 		} 	
 	},
 	migratePhase: {
-		codeFiles: ["config.js", "common.js"]
+		codeFiles: ["config.js", "migrate.js"]
 	}
 }
