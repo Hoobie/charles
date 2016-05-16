@@ -15,6 +15,7 @@ import pl.joegreen.charles.configuration.validation.ValidationResult;
 import pl.joegreen.charles.executor.LocalExecutor;
 import pl.joegreen.charles.executor.exception.CannotExecuteFunctionException;
 import pl.joegreen.charles.executor.exception.CannotInitializeExecutorException;
+import pl.joegreen.charles.model.Population;
 import pl.joegreen.edward.rest.client.RestException;
 
 import javax.script.ScriptException;
