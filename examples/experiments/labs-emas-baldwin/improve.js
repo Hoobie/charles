@@ -4,11 +4,13 @@ function improve(population, parameters) {
 
     populationSize = population.individuals.length;
     for (var i = 0; i < iterations; ++i) {
-        calculateFitnesses(population);
-        fight(population);
         crossOver(population);
         mutate(population);
+        calculateFitnesses(population);
+        fight(population);
     }
+    crossOver(population);
+    mutate(population);
     calculateFitnesses(population);
     return population;
 }
@@ -66,25 +68,29 @@ function improve(population, parameters) {
 }
 
 function fight(population) {
-    for (var i = 0; i < FIGHTS_PER_ITERATION; ++i) {
-        var indexA = getRandomInt(0, population.individuals.length);
-        var indexB = getRandomInt(0, population.individuals.length);
-        var individualA = population.individuals[indexA];
-        var individualB = population.individuals[indexB];
-        if (individualA.fitness > individualB.fitness) {
-            individualA.energy += ENERGY_EXCHANGE;
-            individualB.energy -= ENERGY_EXCHANGE;
-            if (individualB.energy == 0) {
-                population.individuals.splice(indexB, 1);
+    if (population.individuals.length > 2) {
+        for (var i = 0; i < FIGHTS_PER_ITERATION; ++i) {
+            var indexA = getRandomInt(0, population.individuals.length);
+            var indexB = getRandomInt(0, population.individuals.length);
+            var individualA = population.individuals[indexA];
+            var individualB = population.individuals[indexB];
+            if (individualA.fitness > individualB.fitness) {
+                individualA.energy += ENERGY_EXCHANGE;
+                individualB.energy -= ENERGY_EXCHANGE;
+                if (individualB.energy == 0) {
+                    population.individuals.splice(indexB, 1);
+                }
+            } else if (individualB.fitness > individualA.fitness) {
+                individualA.energy -= ENERGY_EXCHANGE;
+                individualB.energy += ENERGY_EXCHANGE;
+                if (individualA.energy == 0) {
+                    population.individuals.splice(indexA, 1);
+                }
             }
-        } else if (individualB.fitness > individualA.fitness) {
-            individualA.energy -= ENERGY_EXCHANGE;
-            individualB.energy += ENERGY_EXCHANGE;
-            if (individualA.energy == 0) {
-                population.individuals.splice(indexA, 1);
+            if (population.individuals.length <= 2) {
+                return;
             }
         }
-
     }
 }
 
