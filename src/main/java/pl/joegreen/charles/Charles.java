@@ -15,14 +15,23 @@ import pl.joegreen.charles.executor.exception.CannotExecuteFunctionException;
 import pl.joegreen.charles.executor.exception.CannotInitializeExecutorException;
 import pl.joegreen.charles.model.Population;
 import pl.joegreen.charles.model.topology.PopulationsTopology;
-import pl.joegreen.charles.model.topology.RingPopulationsTopology;
 import pl.joegreen.charles.model.topology.TopologyFactory;
 import pl.joegreen.edward.rest.client.RestException;
 
 import javax.script.ScriptException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -79,6 +88,95 @@ public class Charles {
 	private PopulationsTopology improveAndMigrateSynchronously(PopulationsTopology populations)
 			throws CannotExecuteFunctionException, RestException, IOException {
 
+        PrintStream sumfitnessStream = new PrintStream(new FileOutputStream("sumfitness.txt", false));
+        PrintStream sumenergyStream = new PrintStream(new FileOutputStream("sumenergy.txt", false));
+
+        PrintStream countfitnessStream = new PrintStream(new FileOutputStream("countfitness.txt", false));
+        PrintStream countenergyStream = new PrintStream(new FileOutputStream("countenergy.txt", false));
+
+        PrintStream avgfitnessStream = new PrintStream(new FileOutputStream("avgfitness.txt", false));
+        PrintStream avgenergyStream = new PrintStream(new FileOutputStream("avgenergy.txt", false));
+
+        PrintStream maxfitnessStream = new PrintStream(new FileOutputStream("maxfitness.txt", false));
+        PrintStream maxenergyStream = new PrintStream(new FileOutputStream("maxenergy.txt", false));
+
+        PrintStream minfitnessStream = new PrintStream(new FileOutputStream("minfitness.txt", false));
+        PrintStream minenergyStream = new PrintStream(new FileOutputStream("minenergy.txt", false));
+
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).average()
+                    .orElseGet(() -> 0.0);
+        }).forEachOrdered(avg -> {
+            avgfitnessStream.print(avg);
+            avgfitnessStream.print(" ");
+        });
+        avgfitnessStream.println("");
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).sum();
+        }).forEachOrdered(avg -> {
+            sumfitnessStream.print(avg);
+            sumfitnessStream.print(" ");
+        });
+        sumfitnessStream.println("");
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).count();
+        }).forEachOrdered(avg -> {
+            countfitnessStream.print(avg);
+            countfitnessStream.print(" ");
+        });
+        countfitnessStream.println("");
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).max().orElse(0);
+        }).forEachOrdered(avg -> {
+            maxfitnessStream.print(avg);
+            maxfitnessStream.print(" ");
+        });
+        maxfitnessStream.println("");
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).min().orElse(0);
+        }).forEachOrdered(avg -> {
+            minfitnessStream.print(avg);
+            minfitnessStream.print(" ");
+        });
+        minfitnessStream.println("");
+
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).average().orElse(0);
+        }).forEachOrdered(avg -> {
+            avgenergyStream.print(avg);
+            avgenergyStream.print(" ");
+        });
+        avgenergyStream.println("");
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).sum();
+        }).forEachOrdered(avg -> {
+            sumenergyStream.print(avg);
+            sumenergyStream.print(" ");
+        });
+        sumenergyStream.println("");
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).count();
+        }).forEachOrdered(avg -> {
+            countenergyStream.print(avg);
+            countenergyStream.print(" ");
+        });
+        countenergyStream.println("");
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).max().orElse(0);
+        }).forEachOrdered(avg -> {
+            maxenergyStream.print(avg);
+            maxenergyStream.print(" ");
+        });
+        maxenergyStream.println("");
+        populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+            return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).min().orElse(0);
+        }).forEachOrdered(avg -> {
+            minenergyStream.print(avg);
+            minenergyStream.print(" ");
+        });
+        minenergyStream.println("");
+
+
 		for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
             logger.info("Performing meta iteration " + i);
             long volunteersPopulationsDelta = Math.abs(edwardApiWrapper.getVolunteersCount() - populations.size());
@@ -104,6 +202,82 @@ public class Charles {
 				populations = migratePopulationsLocally(populations);
 			}
 			populations = improvePopulationsRemotely(populations);
+
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).average()
+                        .orElseGet(() -> 0.0);
+            }).forEachOrdered(avg -> {
+                avgfitnessStream.print(avg);
+                avgfitnessStream.print(" ");
+            });
+            avgfitnessStream.println("");
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).sum();
+            }).forEachOrdered(avg -> {
+                sumfitnessStream.print(avg);
+                sumfitnessStream.print(" ");
+            });
+            sumfitnessStream.println("");
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).count();
+            }).forEachOrdered(avg -> {
+                countfitnessStream.print(avg);
+                countfitnessStream.print(" ");
+            });
+            countfitnessStream.println("");
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).max()
+                        .orElse(0);
+            }).forEachOrdered(avg -> {
+                maxfitnessStream.print(avg);
+                maxfitnessStream.print(" ");
+            });
+            maxfitnessStream.println("");
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> Double.parseDouble(individual.get("fitness").toString())).min()
+                        .orElse(0);
+            }).forEachOrdered(avg -> {
+                minfitnessStream.print(avg);
+                minfitnessStream.print(" ");
+            });
+            minfitnessStream.println("");
+
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).average().orElseGet(() -> 0.0);
+            }).forEachOrdered(avg -> {
+                avgenergyStream.print(avg);
+                avgenergyStream.print(" ");
+            });
+            avgenergyStream.println("");
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).sum();
+            }).forEachOrdered(avg -> {
+                sumenergyStream.print(avg);
+                sumenergyStream.print(" ");
+            });
+            sumenergyStream.println("");
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).count();
+            }).forEachOrdered(avg -> {
+                countenergyStream.print(avg);
+                countenergyStream.print(" ");
+            });
+            countenergyStream.println("");
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).max().orElse(0);
+            }).forEachOrdered(avg -> {
+                maxenergyStream.print(avg);
+                maxenergyStream.print(" ");
+            });
+            maxenergyStream.println("");
+            populations.asList().stream().map(population -> (List<Map>) population.get("individuals")).mapToDouble(individuals -> {
+                return individuals.stream().mapToDouble(individual -> (Integer) individual.get("energy")).min().orElse(0);
+            }).forEachOrdered(avg -> {
+                minenergyStream.print(avg);
+                minenergyStream.print(" ");
+            });
+            minenergyStream.println("");
+
             if (logger.isTraceEnabled()) {
                 logger.trace("Improved populations: \n {} ", populations.toString());
             }

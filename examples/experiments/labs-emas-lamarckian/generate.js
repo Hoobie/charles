@@ -9,6 +9,7 @@ var generate = function(parameters){
             bytes.push(Math.random()<0.5?-1:1);
         }
         individual.energy = BASIC_ENERGY;
+        individual.migrated = false;
         individuals.push(individual);
     }
 
@@ -21,27 +22,7 @@ var generate = function(parameters){
 
 function fitness(individual) {
     var length = individual.bytes.length;
-    return (length * length) / (2 * countEnergy(baldwinLocalSearch(individual.bytes)));
-}
-
-function baldwinLocalSearch(bytes) {
-    var length = bytes.length;
-    do {
-        var originalEnergy = countEnergy(bytes);
-        var bestBytes = bytes;
-        var bestEnergy = originalEnergy;
-        for (var i = 0; i < length; ++i) {
-            var bytesCopy = bytes.slice();
-            bytesCopy[i] = -bytesCopy[i];
-            var newEnergy = countEnergy(bytesCopy);
-            if (newEnergy < bestEnergy) {
-                bestEnergy = newEnergy;
-                bestBytes = bytesCopy;
-            }
-        }
-        bytes = bestBytes;
-    } while (bestEnergy < originalEnergy);
-    return bytes;
+    return (length * length) / (2 * countEnergy(individual.bytes));
 }
 
 function countEnergy(bytes) {

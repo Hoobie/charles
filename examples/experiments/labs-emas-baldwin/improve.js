@@ -2,17 +2,67 @@ function improve(population, parameters) {
     iterations = parameters.iterations;
     individuals = population.individuals;
 
+    individuals.forEach(function(individual) {
+        individual.migrated = false;
+    });
+
     populationSize = population.individuals.length;
     for (var i = 0; i < iterations; ++i) {
-        crossOver(population);
-        mutate(population);
+        meet(population);
+        //mutate(population);
         calculateFitnesses(population);
-        fight(population);
     }
-    crossOver(population);
-    mutate(population);
-    calculateFitnesses(population);
     return population;
+}
+
+
+function meet(population) {
+    var newIndviduals = [];
+
+    shuffle(population.individuals);
+    population.individuals.forEach(function (individual) {
+        for (var i in population.individuals) {
+            var partner = population.individuals[i];
+            if (Math.random() < MEET_PROBABILITY && partner != individual && partner.energy > 0 && individual.energy > 0) {
+                if (individual.energy > CROSSOVER_MINIMUM_ENERGY && partner.energy > CROSSOVER_MINIMUM_ENERGY) {
+                    newIndviduals.push(createChildren(individual, partner));
+                    //var children = createChildren(individual, partner);
+                    //newIndviduals.push(children[0]);
+                    //newIndviduals.push(children[1]);
+                } else {
+                    fightIndividual(individual, partner)
+                }
+            }
+            if (individual.energy <= 0) {
+                return;
+            }
+        }
+    });
+
+    population.individuals = population.individuals.filter(function (individual) {
+        return individual.energy > 0;
+    });
+    population.individuals = population.individuals.concat(newIndviduals);
+}
+
+function fightIndividual(individualA, individualB) {
+    if (individualA.fitness > individualB.fitness) {
+        if (individualB.energy < ENERGY_EXCHANGE) {
+            individualA.energy += individualB.energy;
+            individualB.energy = 0;
+        } else {
+            individualA.energy += ENERGY_EXCHANGE;
+            individualB.energy -= ENERGY_EXCHANGE;
+        }
+    } else if (individualB.fitness > individualA.fitness) {
+        if (individualA.energy < ENERGY_EXCHANGE) {
+            individualB.energy += individualA.energy;
+            individualA.energy = 0;
+        } else {
+            individualB.energy += ENERGY_EXCHANGE;
+            individualA.energy -= ENERGY_EXCHANGE;
+        }
+    }
 }
 
 {
@@ -24,7 +74,11 @@ function improve(population, parameters) {
 
     function fitness(individual) {
         var length = individual.bytes.length;
-        return (length * length) / (2 * countEnergy(baldwinLocalSearch(individual.bytes)));
+        if (Math.random() < LOCAL_SEARCH_PROBABILITY) {
+            return (length * length) / (2 * countEnergy(individual.bytes));
+        } else {
+            return (length * length) / (2 * countEnergy(baldwinLocalSearch(individual.bytes)));
+        }
     }
 
     function baldwinLocalSearch(bytes) {
@@ -67,75 +121,18 @@ function improve(population, parameters) {
     }
 }
 
-function fight(population) {
-    if (population.individuals.length > 2) {
-        for (var i = 0; i < FIGHTS_PER_ITERATION; ++i) {
-            var indexA = getRandomInt(0, population.individuals.length);
-            var indexB = getRandomInt(0, population.individuals.length);
-            var individualA = population.individuals[indexA];
-            var individualB = population.individuals[indexB];
-            if (individualA.fitness > individualB.fitness) {
-                individualA.energy += ENERGY_EXCHANGE;
-                individualB.energy -= ENERGY_EXCHANGE;
-                if (individualB.energy == 0) {
-                    population.individuals.splice(indexB, 1);
-                }
-            } else if (individualB.fitness > individualA.fitness) {
-                individualA.energy -= ENERGY_EXCHANGE;
-                individualB.energy += ENERGY_EXCHANGE;
-                if (individualA.energy == 0) {
-                    population.individuals.splice(indexA, 1);
-                }
-            }
-            if (population.individuals.length <= 2) {
-                return;
-            }
-        }
-    }
+
+function createChildren(individualA, individualB) {
+    var firstBytes = individualA.bytes.slice();
+    var secondBytes = individualB.bytes.slice();
+    individualA.energy -= NEWBORN_ENERGY / 2;
+    individualB.energy -= NEWBORN_ENERGY / 2;
+    var crossOverPoint = getRandomInt(0, firstBytes.length);
+    var firstBytesEnding = firstBytes.splice(crossOverPoint);
+    var secondBytesEnding = secondBytes.splice(crossOverPoint);
+    return {bytes: firstBytes.concat(secondBytesEnding), energy: NEWBORN_ENERGY, migrated: false};
 }
 
-{
-    function crossOver(population) {
-        var crossedOverIndividuals = [];
-
-        var crossoverCandidates = population.individuals.filter(function (individual) {
-            return individual.energy > CROSSOVER_MINIMUM_ENERGY;
-        });
-        if (crossoverCandidates.length < 2) {
-            return;
-        }
-        shuffle(crossoverCandidates);
-        crossoverCandidates.forEach(function (candidate) {
-            crossoverCandidates.filter(function (individual) {
-                return Math.random() <= CROSSOVER_PROBABILITY && individual.energy > CROSSOVER_MINIMUM_ENERGY && candidate != individual;
-            }).forEach(function (individual) {
-                if (candidate.energy < CROSSOVER_MINIMUM_ENERGY) {
-                    return;
-                }
-                var children = createChildren(candidate, individual);
-                crossedOverIndividuals.push(children[0]);
-                crossedOverIndividuals.push(children[1]);
-            });
-        });
-        population.individuals = population.individuals.concat(crossedOverIndividuals);
-    }
-
-    function createChildren(individualA, individualB) {
-        var firstBytes = individualA.bytes.slice();
-        var secondBytes = individualB.bytes.slice();
-        individualA.energy -= BASIC_ENERGY;
-        individualB.energy -= BASIC_ENERGY;
-        var crossOverPoint = getRandomInt(0, firstBytes.length);
-        var firstBytesEnding = firstBytes.splice(crossOverPoint);
-        var secondBytesEnding = secondBytes.splice(crossOverPoint);
-        firstBytes = firstBytes.concat(secondBytesEnding);
-        secondBytes = secondBytes.concat(firstBytesEnding);
-        return [
-            {bytes: firstBytes, energy: BASIC_ENERGY},
-            {bytes: secondBytes, energy: BASIC_ENERGY}
-        ];
-    }
-}
 
 {
     function mutate(population) {

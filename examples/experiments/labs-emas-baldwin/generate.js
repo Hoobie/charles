@@ -9,19 +9,23 @@ var generate = function(parameters){
             bytes.push(Math.random()<0.5?-1:1);
         }
         individual.energy = BASIC_ENERGY;
+        individual.migrated = false;
         individuals.push(individual);
     }
 
     individuals.forEach(function (individual) {
         individual.fitness = fitness(individual);
-    })
+    });
     return {individuals : individuals};
-}
-
+};
 
 function fitness(individual) {
     var length = individual.bytes.length;
-    return (length * length) / (2 * countEnergy(baldwinLocalSearch(individual.bytes)));
+    if (Math.random() < LOCAL_SEARCH_PROBABILITY) {
+        return (length * length) / (2 * countEnergy(individual.bytes));
+    } else {
+        return (length * length) / (2 * countEnergy(baldwinLocalSearch(individual.bytes)));
+    }
 }
 
 function baldwinLocalSearch(bytes) {
