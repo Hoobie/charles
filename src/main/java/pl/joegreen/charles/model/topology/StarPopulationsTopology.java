@@ -27,6 +27,9 @@ public class StarPopulationsTopology extends PopulationsTopology {
     public void removeOne() {
         Set<Population> populations = populationsGraph.vertexSet();
         if (populations.size() > 0) {
+            // Entire star has been removed
+            if (populations.size() == 1)
+                populationInCenter = null;
             populationsGraph.removeVertex(populations.iterator().next());
         }
     }
