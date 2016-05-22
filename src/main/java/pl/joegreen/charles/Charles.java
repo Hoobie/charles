@@ -16,6 +16,7 @@ import pl.joegreen.charles.executor.exception.CannotInitializeExecutorException;
 import pl.joegreen.charles.model.Population;
 import pl.joegreen.charles.model.topology.PopulationsTopology;
 import pl.joegreen.charles.model.topology.RingPopulationsTopology;
+import pl.joegreen.charles.model.topology.TopologyFactory;
 import pl.joegreen.edward.rest.client.RestException;
 
 import javax.script.ScriptException;
@@ -196,8 +197,7 @@ public class Charles {
 	private PopulationsTopology generatePopulationsLocally()
 			throws CannotExecuteFunctionException {
 		logger.info("Generating populations locally");
-		// TODO: make a topology type configurable
-		PopulationsTopology populations = new RingPopulationsTopology();
+		PopulationsTopology populations = TopologyFactory.getTopology(configuration.getTopology());
 		for (int i = 0; i < edwardApiWrapper.getVolunteersCount(); ++i) {
 			Map<Object, Object> phaseParameters = configuration.getPhaseConfiguration(PhaseType.GENERATE).getParameters();
 			Population generatedPopulation = new Population(localExecutor.executeFunction(
@@ -247,8 +247,7 @@ public class Charles {
 					results);
 		}
         logger.info("Waiting for improved populations took {} ms ", System.currentTimeMillis() - startTime);
-		// TODO: replace with the configured topology type
-		PopulationsTopology populationsTopology = new RingPopulationsTopology();
+		PopulationsTopology populationsTopology = TopologyFactory.getTopology(configuration.getTopology());
         taskIdentifiers.stream()
 				.map(results::get)
 				.forEach(populationsTopology::add);
