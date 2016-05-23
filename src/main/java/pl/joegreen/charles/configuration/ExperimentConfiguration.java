@@ -36,6 +36,8 @@ public class ExperimentConfiguration {
 	private PhaseParameters improvePhase;
 	private PhaseParameters migratePhase;
 
+	private String topology;
+
 	private Map<String, Object> getDescriptionToFieldsMap() {
 		Map<String, Object> builder = new HashMap<String, Object>();
 		builder.put("asynchronous", asynchronous);
@@ -49,6 +51,7 @@ public class ExperimentConfiguration {
 		builder.put("concurrentExecutions", concurrentExecutions);
 		builder.put("timeout", timeout);
 		builder.put("priority", priority);
+		builder.put("topology", topology);
 		return Collections.unmodifiableMap(builder);
 	}
 
@@ -126,7 +129,7 @@ public class ExperimentConfiguration {
 				+ ", concurrentExecutions=" + concurrentExecutions
 				+ ", source=" + source + ", asynchronous=" + asynchronous
 				+ ", generatePhase=" + generatePhase + ", improvePhase="
-				+ improvePhase + ", migratePhase=" + migratePhase + "]";
+				+ improvePhase + ", migratePhase=" + migratePhase + ", topology=" + topology + "]";
 	}
 
 	public Integer getMetaIterationsCount() {
@@ -172,5 +175,7 @@ public class ExperimentConfiguration {
 	public Long getTimeout() {
 		return timeout;
 	}
+
+	public String getTopology() { return topology;}
 
 }
