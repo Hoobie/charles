@@ -15,7 +15,7 @@ var generate = function(parameters){
     
     individuals.forEach(function (individual) {
         individual.fitness = fitness(individual);
-    })
+    });
     return {individuals : individuals};
 };
 
