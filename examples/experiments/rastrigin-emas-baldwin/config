@@ -1,0 +1,27 @@
+{
+	/*edward properties*/
+	priority:0, 
+	concurrentExecutions:1,
+	timeout:120000,
+	/* charles properties */
+	asynchronous: false,
+	metaIterationsCount:20,
+	populationsCount: 6,
+	maxMetaIterationTime: 100000,
+	generatePhase: {
+		codeFiles: ["config.js", "generate.js"],
+		parameters: {number:25, dimension:6}
+	},
+	improvePhase: {
+		codeFiles: ["config.js", "improve.js"],
+		parameters: {
+			iterations:25
+		}
+	},
+	migratePhase: {
+		codeFiles: ["config.js", "migrate.js"],
+		parameters: {
+			migrantsPerMetaIteration: 10
+		}
+	}
+}
