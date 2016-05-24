@@ -1,5 +1,4 @@
 var migrate = function (firstPopulation, secondPopulation, parameters) {
-
     if (firstPopulation.individuals.length > 2) {
         firstPopulation.individuals.filter(function (individual) {
             return individual.energy >= MIGRATION_MINIMUM_ENERGY && Math.random() < MIGRATION_PROBABILITY && individual.migrated == false;
