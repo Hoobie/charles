@@ -10,6 +10,7 @@ var generate = function(parameters){
         }
         individual.energy = BASIC_ENERGY;
         individual.migrated = false;
+        individual.localSearch = Math.random() < LOCAL_SEARCH_PROBABILITY;
         individuals.push(individual);
     }
 
@@ -21,10 +22,10 @@ var generate = function(parameters){
 
 function fitness(individual) {
     var length = individual.bytes.length;
-    if (Math.random() < LOCAL_SEARCH_PROBABILITY) {
-        return (length * length) / (2 * countEnergy(individual.bytes));
-    } else {
+    if (individual.localSearch) {
         return (length * length) / (2 * countEnergy(baldwinLocalSearch(individual.bytes)));
+    } else {
+        return (length * length) / (2 * countEnergy(individual.bytes));
     }
 }
 

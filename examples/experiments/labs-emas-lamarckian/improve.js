@@ -9,7 +9,6 @@ function improve(population, parameters) {
     populationSize = population.individuals.length;
     for (var i = 0; i < iterations; ++i) {
         meet(population);
-        //mutate(population);
         improveByLocalSearch(population);
         calculateFitnesses(population);
     }
@@ -21,8 +20,19 @@ function meet(population) {
 
     shuffle(population.individuals);
     population.individuals.forEach(function (individual) {
-        for (var i in population.individuals) {
-            var partner = population.individuals[i];
+        var individuals = population.individuals.filter(function (individual) {
+            return individual.energy > 0;
+        }).sort(function (a, b) {
+            if (a.fitness < b.fitness) {
+                return -1;
+            } else if (a.fitness > b.fitness) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+        for (var i in individuals) {
+            var partner = individuals[i];
             if (Math.random() < MEET_PROBABILITY && partner != individual && partner.energy > 0 && individual.energy > 0) {
                 if (individual.energy >= CROSSOVER_MINIMUM_ENERGY && partner.energy >= CROSSOVER_MINIMUM_ENERGY) {
                     newIndividuals.push(createChildren(individual, partner));
@@ -127,18 +137,30 @@ function createChildren(individualA, individualB) {
 
 {
     function mutate(population) {
-        population.individuals.forEach(mutateIndividual)
+        population.individuals = population.individuals.filter(function (individual) {
+            return Math.random() < INDIVIDUAL_MUTATION_PROBABILITY && individual.energy > MUTATION_ENERGY;
+        }).map(mutateIndividual).filter(function (a) {
+            return a != null
+        }).concat(population.individuals)
     }
 
     function mutateIndividual(individual) {
-        if (Math.random() < INDIVIDUAL_MUTATION_PROBABILITY) {
-            for (var i = 0; i < individual.bytes.length; ++i) {
-                if (Math.random() < BIT_MUTATION_PROBABILITY) {
-                    individual.bytes[i] = -individual.bytes[i];
-                }
+        var bytes = [];
+        for (var i = 0; i < individual.bytes.length; ++i) {
+            if (Math.random() < BIT_MUTATION_PROBABILITY) {
+                bytes[i] = -individual.bytes[i];
+            } else {
+                bytes[i] = individual.bytes[i];
             }
         }
-        return individual;
+        var newIndividual = {bytes: bytes, energy: MUTATION_ENERGY, migrated: false, localSearch: Math.random() < LOCAL_SEARCH_PROBABILITY};
+        newIndividual.fitness = fitness(newIndividual)
+        if (newIndividual.fitness >= individual.fitness) {
+            individual.energy -= MUTATION_ENERGY;
+            return newIndividual;
+        } else {
+            return null;
+        }
     }
 }
 

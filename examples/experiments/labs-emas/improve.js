@@ -2,7 +2,7 @@ function improve(population, parameters) {
     iterations = parameters.iterations;
     individuals = population.individuals;
 
-    individuals.forEach(function(individual) {
+    individuals.forEach(function (individual) {
         individual.migrated = false;
     });
 
@@ -127,9 +127,10 @@ function createChildren(individualA, individualB) {
     individualA.energy -= NEWBORN_ENERGY / 2;
     individualB.energy -= NEWBORN_ENERGY / 2;
     var crossOverPoint = getRandomInt(0, firstBytes.length);
-    var firstBytesEnding = firstBytes.splice(crossOverPoint);
     var secondBytesEnding = secondBytes.splice(crossOverPoint);
-    return {bytes: firstBytes.concat(secondBytesEnding), energy: NEWBORN_ENERGY, migrated: false};
+    var newIndividual = {bytes: firstBytes.concat(secondBytesEnding), energy: NEWBORN_ENERGY, migrated: false};
+    newIndividual.fitness = fitness(newIndividual);
+    return newIndividual;
 }
 
 
@@ -152,8 +153,10 @@ function createChildren(individualA, individualB) {
             }
         }
         var newIndividual = {bytes: bytes, energy: MUTATION_ENERGY, migrated: false};
-        if (fitness(newIndividual) >= individual.fitness) {
+        newIndividual.fitness = fitness(newIndividual);
+        if (newIndividual.fitness >= individual.fitness) {
             individual.energy -= MUTATION_ENERGY;
+
             return newIndividual;
         } else {
             return null;
