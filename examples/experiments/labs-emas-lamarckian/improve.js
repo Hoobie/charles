@@ -2,15 +2,94 @@ function improve(population, parameters) {
     iterations = parameters.iterations;
     individuals = population.individuals;
 
+    individuals.forEach(function(individual) {
+        individual.migrated = false;
+    });
+
     populationSize = population.individuals.length;
     for (var i = 0; i < iterations; ++i) {
+        meet(population);
+        improveByLocalSearch(population);
         calculateFitnesses(population);
-        fight(population);
-        crossOver(population);
     }
-    calculateFitnesses(population);
     return population;
 }
+
+function meet(population) {
+    var newIndividuals = [];
+
+    shuffle(population.individuals);
+    population.individuals.forEach(function (individual) {
+        var individuals = population.individuals.filter(function (individual) {
+            return individual.energy > 0;
+        }).sort(function (a, b) {
+            if (a.fitness < b.fitness) {
+                return -1;
+            } else if (a.fitness > b.fitness) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+        for (var i in individuals) {
+            var partner = individuals[i];
+            if (Math.random() < MEET_PROBABILITY && partner != individual && partner.energy > 0 && individual.energy > 0) {
+                if (individual.energy >= CROSSOVER_MINIMUM_ENERGY && partner.energy >= CROSSOVER_MINIMUM_ENERGY) {
+                    newIndividuals.push(createChildren(individual, partner));
+                } else {
+                    fightIndividual(individual, partner)
+                }
+            }
+            if (individual.energy <= 0) {
+                return;
+            }
+        }
+    });
+
+    population.individuals = population.individuals.filter(function (individual) {
+        return individual.energy > 0;
+    });
+    population.individuals = population.individuals.concat(newIndividuals);
+}
+
+function fightIndividual(individualA, individualB) {
+    if (individualA.fitness > individualB.fitness) {
+        if (individualB.energy < ENERGY_EXCHANGE) {
+            individualA.energy += individualB.energy;
+            individualB.energy = 0;
+        } else {
+            individualA.energy += ENERGY_EXCHANGE;
+            individualB.energy -= ENERGY_EXCHANGE;
+        }
+    } else if (individualB.fitness > individualA.fitness) {
+        if (individualA.energy < ENERGY_EXCHANGE) {
+            individualB.energy += individualA.energy;
+            individualA.energy = 0;
+        } else {
+            individualB.energy += ENERGY_EXCHANGE;
+            individualA.energy -= ENERGY_EXCHANGE;
+        }
+    } else {
+        if (Math.random() < 0.5) {
+            if (individualB.energy < ENERGY_EXCHANGE) {
+                individualA.energy += individualB.energy;
+                individualB.energy = 0;
+            } else {
+                individualA.energy += ENERGY_EXCHANGE;
+                individualB.energy -= ENERGY_EXCHANGE;
+            }
+        } else {
+            if (individualA.energy < ENERGY_EXCHANGE) {
+                individualB.energy += individualA.energy;
+                individualA.energy = 0;
+            } else {
+                individualB.energy += ENERGY_EXCHANGE;
+                individualA.energy -= ENERGY_EXCHANGE;
+            }
+        }
+    }
+}
+
 
 {
     function calculateFitnesses(population) {
@@ -44,90 +123,44 @@ function improve(population, parameters) {
     }
 }
 
-function fight(population) {
-    for (var i = 0; i < FIGHTS_PER_ITERATION; ++i) {
-        var indexA = getRandomInt(0, population.individuals.length);
-        var indexB = getRandomInt(0, population.individuals.length);
-        var individualA = population.individuals[indexA];
-        var individualB = population.individuals[indexB];
-        if (individualA.fitness > individualB.fitness) {
-            individualA.energy += ENERGY_EXCHANGE;
-            individualB.energy -= ENERGY_EXCHANGE;
-            if (individualB.energy == 0) {
-                population.individuals.splice(indexB, 1);
-            }
-        } else if (individualB.fitness > individualA.fitness) {
-            individualA.energy -= ENERGY_EXCHANGE;
-            individualB.energy += ENERGY_EXCHANGE;
-            if (individualA.energy == 0) {
-                population.individuals.splice(indexA, 1);
-            }
-        }
-
-    }
+function createChildren(individualA, individualB) {
+    var firstBytes = individualA.bytes.slice();
+    var secondBytes = individualB.bytes.slice();
+    individualA.energy -= NEWBORN_ENERGY / 2;
+    individualB.energy -= NEWBORN_ENERGY / 2;
+    var crossOverPoint = getRandomInt(0, firstBytes.length);
+    var firstBytesEnding = firstBytes.splice(crossOverPoint);
+    var secondBytesEnding = secondBytes.splice(crossOverPoint);
+    return {bytes: firstBytes.concat(secondBytesEnding), energy: NEWBORN_ENERGY, migrated: false};
 }
 
+
 {
-    function crossOver(population) {
-        var crossedOverIndividuals = [];
-
-        var crossoverCandidates = population.individuals.filter(function (individual) {
-            return individual.energy > CROSSOVER_MINIMUM_ENERGY;
-        });
-        if (crossoverCandidates.length < 2) {
-            return;
-        }
-        shuffle(crossoverCandidates);
-        crossoverCandidates.forEach(function (candidate) {
-            crossoverCandidates.filter(function (individual) {
-                return Math.random() <= CROSSOVER_PROBABILITY && individual.energy > CROSSOVER_MINIMUM_ENERGY && candidate != individual;
-            }).forEach(function (individual) {
-                if (candidate.energy < CROSSOVER_MINIMUM_ENERGY) {
-                    return;
-                }
-                var children = createChildren(candidate, individual);
-                crossedOverIndividuals.push(children[0]);
-                crossedOverIndividuals.push(children[1]);
-            });
-        });
-        population.individuals = population.individuals.concat(crossedOverIndividuals);
+    function mutate(population) {
+        population.individuals = population.individuals.filter(function (individual) {
+            return Math.random() < INDIVIDUAL_MUTATION_PROBABILITY && individual.energy > MUTATION_ENERGY;
+        }).map(mutateIndividual).filter(function (a) {
+            return a != null
+        }).concat(population.individuals)
     }
 
-    function createChildren(individualA, individualB) {
-        var firstBytes = individualA.bytes.slice();
-        var secondBytes = individualB.bytes.slice();
-        individualA.energy -= BASIC_ENERGY;
-        individualB.energy -= BASIC_ENERGY;
-        var crossOverPoint = getRandomInt(0, firstBytes.length);
-        var firstBytesEnding = firstBytes.splice(crossOverPoint);
-        var secondBytesEnding = secondBytes.splice(crossOverPoint);
-        firstBytes = firstBytes.concat(secondBytesEnding);
-        secondBytes = secondBytes.concat(firstBytesEnding);
-        return [
-            {bytes: localSearch(firstBytes), energy: BASIC_ENERGY},
-            {bytes: localSearch(secondBytes), energy: BASIC_ENERGY}
-        ];
-    }
-
-    function localSearch(bytes) {
-        var length = bytes.length;
-        //TODO: efficiency!
-        do {
-            var originalEnergy = countEnergy(bytes);
-            var bestBytes = bytes;
-            var bestEnergy = originalEnergy;
-            for (var i = 0; i < length; ++i) {
-                var bytesCopy = bytes.slice();
-                bytesCopy[i] = -bytesCopy[i];
-                var newEnergy = countEnergy(bytesCopy);
-                if (newEnergy < bestEnergy) {
-                    bestEnergy = newEnergy;
-                    bestBytes = bytesCopy;
-                }
+    function mutateIndividual(individual) {
+        var bytes = [];
+        for (var i = 0; i < individual.bytes.length; ++i) {
+            if (Math.random() < BIT_MUTATION_PROBABILITY) {
+                bytes[i] = -individual.bytes[i];
+            } else {
+                bytes[i] = individual.bytes[i];
             }
-            bytes = bestBytes;
-        } while (bestEnergy < originalEnergy);
-        return bytes;
+        }
+        var newIndividual = {bytes: bytes, energy: MUTATION_ENERGY, migrated: false, localSearch: Math.random() < LOCAL_SEARCH_PROBABILITY};
+        newIndividual.fitness = fitness(newIndividual)
+        if (newIndividual.fitness >= individual.fitness) {
+            individual.energy -= MUTATION_ENERGY;
+            return newIndividual;
+        } else {
+            return null;
+        }
     }
 }
 
@@ -143,4 +176,33 @@ function shuffle(a) {
         a[i - 1] = a[j];
         a[j] = x;
     }
+}
+
+function improveByLocalSearch(population) {
+    population.individuals.forEach(function(individual) {
+        if (Math.random() < LOCAL_SEARCH_PROBABILITY) {
+            individual.bytes = localSearch(individual.bytes);
+        }
+    })
+}
+
+function localSearch(bytes) {
+    var length = bytes.length;
+    //TODO: efficiency!
+    do {
+        var originalEnergy = countEnergy(bytes);
+        var bestBytes = bytes;
+        var bestEnergy = originalEnergy;
+        for (var i = 0; i < length; ++i) {
+            var bytesCopy = bytes.slice();
+            bytesCopy[i] = -bytesCopy[i];
+            var newEnergy = countEnergy(bytesCopy);
+            if (newEnergy < bestEnergy) {
+                bestEnergy = newEnergy;
+                bestBytes = bytesCopy;
+            }
+        }
+        bytes = bestBytes;
+    } while (bestEnergy < originalEnergy);
+    return bytes;
 }

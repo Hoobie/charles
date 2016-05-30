@@ -1,28 +1,28 @@
 {
-	//Rastrigin with EMAS
 	/*edward properties*/
 	priority:0, 
 	concurrentExecutions:1,
 	timeout:120000,
 	/* charles properties */
-	asynchronous: true,
-	metaIterationsCount:5,
+	asynchronous: false,
+	metaIterationsCount:20,
 	populationsCount: 6,
 	maxMetaIterationTime: 100000,
 	generatePhase: {
-		codeFiles: ["generate.js"],
-		parameters: {number:50, dimension:6, range:5.12}
+		codeFiles: ["config.js", "generate.js"],
+		parameters: {number:25, dimension:6}
 	},
 	improvePhase: {
-		codeFiles: ["improveEMAS.js"],
+		codeFiles: ["config.js", "improve.js"],
 		parameters: {
-			iterations:1000
+			iterations:25
 		}
 	},
 	migratePhase: {
-		codeFiles: ["migrateAsync.js"],
+		codeFiles: ["config.js", "migrate.js"],
 		parameters: {
 			migrantsPerMetaIteration: 10
 		}
-	}
+	},
+    topology:"STAR"
 }
