@@ -127,6 +127,7 @@ function createChildren(individualA, individualB) {
     individualA.energy -= NEWBORN_ENERGY / 2;
     individualB.energy -= NEWBORN_ENERGY / 2;
     var crossOverPoint = getRandomInt(0, firstBytes.length);
+    var firstBytesEnding = firstBytes.splice(crossOverPoint);
     var secondBytesEnding = secondBytes.splice(crossOverPoint);
     var newIndividual = {bytes: firstBytes.concat(secondBytesEnding), energy: NEWBORN_ENERGY, migrated: false};
     newIndividual.fitness = fitness(newIndividual);

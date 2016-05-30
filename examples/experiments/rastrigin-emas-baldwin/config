@@ -23,5 +23,6 @@
 		parameters: {
 			migrantsPerMetaIteration: 10
 		}
-	}
+	},
+    topology:"STAR"
 }

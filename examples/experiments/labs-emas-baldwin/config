@@ -21,5 +21,6 @@
 	},
 	migratePhase: {
 		codeFiles: ["config.js", "migrate.js"]
-	}
+	},
+	topology:"STAR"
 }
