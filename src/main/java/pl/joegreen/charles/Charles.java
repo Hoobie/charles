@@ -81,7 +81,7 @@ public class Charles {
 
 		for (int i = 0; i < configuration.getMetaIterationsCount(); ++i) {
             logger.info("Performing meta iteration " + i);
-            long volunteersPopulationsDelta = Math.abs(edwardApiWrapper.getVolunteersCount() - populations.size());
+            long volunteersPopulationsDelta = edwardApiWrapper.getVolunteersCount() - populations.size();
             if (volunteersPopulationsDelta > 0) {
                 for (int j = 0; j < volunteersPopulationsDelta; j++) {
                     Map<Object, Object> phaseParameters = configuration
@@ -94,7 +94,7 @@ public class Charles {
 					populations.add(generatedPopulation);
                 }
             } else {
-				for (int j = 0; j < volunteersPopulationsDelta && populations.size() > 0; j++) {
+				for (int j = 0; j < Math.abs(volunteersPopulationsDelta) && populations.size() > 0; j++) {
 					logger.info("Removing {} population(s)", volunteersPopulationsDelta);
 					populations.removeOne();
                 }
